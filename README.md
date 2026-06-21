@@ -6,8 +6,6 @@
 
 **Live:** https://osakenpiro.github.io/chikyu-de-eta/
 
-![地球でえた](https://osakenpiro.github.io/chikyu-de-eta/)
-
 ## 特徴
 - **線だけ・裏が透ける**ワイヤーフレーム地球儀。透明球＋経緯線＋データ層を
   AdditiveBlending と depth-fade（手前濃・奥淡）で「平面に潰さず球に見せる」。
@@ -36,4 +34,34 @@
    }
    ```
    - `kind:"line"` … ポリゴン/線を枠線で描画（県境・鉱区など）
-   - `kind:"point"` … 
+   - `kind:"point"` … 点を発光ドットで描画。`sizeField` 指定でデータ値に応じ点サイズ可変
+3. `data/SOURCES.md` の表に出典・ライセンス・帰属を1行追記し、push。以上。
+
+> `credit` 文字列は画面フッターに自動掲載される（CC BY の表示義務を自動で満たす設計）。
+
+## 構成
+```
+index.html                 単一HTML（描画・UI・depth-fade shader・manifest駆動）
+data/layers.json           レイヤー台帳（これを編集して層を増やす）
+data/admin.geojson         都道府県境（N03・簡略化）
+data/SOURCES.md            データ出典・ライセンス・帰属
+vendor/three.module.min.js three.js r160（同梱・MIT）
+vendor/addons/controls/    OrbitControls（同梱・MIT）
+LICENSE                    コードのMITライセンス
+```
+
+## ライセンス（二層）
+- **コード**：MIT（`LICENSE`）。同梱の three.js も MIT。
+- **データ**：`data/*.geojson` は各オープンデータ由来で **CC BY 4.0**（`data/SOURCES.md`）。
+  再配布・改変時は出典表示が必要。
+
+## ロードマップ
+- **v0**（現在）行政区域＋（次）森林・鉱区・伝統工芸の産地
+- **v1** PMTiles 化（大データ対応）＋ CODH 歴史地名層
+- **v2** deck.gl（GlobeView）で arc（交易・海路）／hexbin（産地集積）／時間軸アニメ
+  — 見た目スキンは上に載せ替えるので、この地球儀の表情は維持する
+- 派生 **「からだの地図」** — 同じ「スキン＋レイヤー台帳」フレームワークを人体表面へ
+  （足の裏＝地球のブリッジ）
+
+---
+osakenpiro · Visionium / 全人類UX改善

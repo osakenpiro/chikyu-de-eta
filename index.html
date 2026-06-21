@@ -311,4 +311,64 @@ function credits(){
 }
 
 function applyColor(){ const w=settings.white;
-  allMats.forEach(m=> m.uniforms.uColor.value.copy(w?WHITE:m.userData
+  allMats.forEach(m=> m.uniforms.uColor.value.copy(w?WHITE:m.userData.base));
+  $('#tColor').textContent = w?'金に切替':'白に切替';
+}
+function applyOpacity(){ allMats.forEach(m=> m.uniforms.uOpacity.value = Math.min(1, settings.opacity*m.userData.opMul)); }
+function applyFade(){ allMats.forEach(m=> m.uniforms.uBackFade.value = settings.fade); }
+
+function labels(){ $('#vOpacity').textContent=settings.opacity.toFixed(2);
+  $('#vFade').textContent=settings.fade.toFixed(2); $('#vGrid').textContent=settings.grid+'°'; }
+
+$('#opacity').value=settings.opacity; $('#fade').value=settings.fade; $('#grid').value=settings.grid; labels();
+$('#opacity').addEventListener('input',e=>{ settings.opacity=+e.target.value; applyOpacity(); labels(); save(); });
+$('#fade').addEventListener('input',e=>{ settings.fade=+e.target.value; applyFade(); labels(); save(); });
+$('#grid').addEventListener('input',e=>{ settings.grid=+e.target.value; labels(); });
+$('#grid').addEventListener('change',()=>{ buildGraticule(settings.grid); save(); });
+$('#tColor').addEventListener('click',()=>{ settings.white=!settings.white; applyColor(); save(); });
+const rotBtn=$('#tRotate'); rotBtn.classList.toggle('on',settings.rotate);
+rotBtn.addEventListener('click',()=>{ settings.rotate=!settings.rotate; controls.autoRotate=settings.rotate; rotBtn.classList.toggle('on',settings.rotate); save(); });
+$('#panelHead').addEventListener('click',()=>$('#panel').classList.toggle('collapsed'));
+$('#aboutBtn').addEventListener('click',()=>$('#about').classList.add('show'));
+$('#aboutX').addEventListener('click',()=>$('#about').classList.remove('show'));
+$('#about').addEventListener('click',e=>{ if(e.target.id==='about') $('#about').classList.remove('show'); });
+applyColor();
+
+addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); },{passive:true});
+
+function tick(){ controls.update();
+  const cp=camera.position; allMats.forEach(m=> m.uniforms.uCamPos.value.copy(cp));
+  renderer.render(scene,camera); requestAnimationFrame(tick); }
+tick();
+
+// ---- load manifest + layers ----
+fetch('data/layers.json').then(r=>{ if(!r.ok) throw new Error('layers.json '+r.status); return r.json(); })
+  .then(cfg=>{
+    const layers=(cfg.layers||[]);
+    return layers.reduce((chain,l)=> chain.then(()=>loadLayer(l)), Promise.resolve())
+      .then(()=>{ layerUI(); credits(); statusEl.style.display='none';
+        console.log('[chikyu-de-eta] ready:', Object.keys(reg).length, 'layers'); });
+  })
+  .catch(err=>{ console.error('[chikyu-de-eta] manifest failed', err);
+    statusEl.innerHTML='経緯線は表示中。レイヤー定義の読込に失敗しました（'+err.message+'）。'; });
+
+function loadLayer(l){
+  if(settings.layers[l.id]===undefined) settings.layers[l.id] = l.enabled!==false;
+  return fetch(l.file).then(r=>{ if(!r.ok) throw new Error(l.id+' '+r.status); return r.json(); })
+    .then(gj=>{
+      const opMul=l.opacityMul!=null?l.opacityMul:1;
+      let built, mat;
+      if(l.kind==='point'){ mat=makePointMat(l.color, opMul, l.size!=null?l.size:2.4); built=buildPointLayer(gj,l,mat); }
+      else { mat=makeLineMat(l.color, opMul); built=buildLineLayer(gj,l,mat); }
+      allMats.push(mat);
+      built.obj.visible = !!settings.layers[l.id];
+      scene.add(built.obj);
+      reg[l.id]={cfg:l, obj:built.obj, mat};
+      if(settings.white) mat.uniforms.uColor.value.copy(WHITE);
+      console.log('[chikyu-de-eta] layer', l.id, 'loaded:', built.count, l.kind==='point'?'points':'segments');
+    })
+    .catch(e=>{ console.error('[chikyu-de-eta] layer failed', l.id, e); });
+}
+</script>
+</body>
+</html>
