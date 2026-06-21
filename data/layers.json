@@ -1,0 +1,28 @@
+{
+  "_about": "地球でえた レイヤー台帳 / layer manifest. レイヤを足す = ここに1エントリ追加 + data/ にGeoJSONを置く. 詳細は ../README.md と ./SOURCES.md.",
+  "_fields": {
+    "id": "一意のキー（localStorageの表示ON/OFF保存に使う）",
+    "name": "UIに出る表示名",
+    "file": "GeoJSONのパス（EPSG:4326 / 経緯度）",
+    "kind": "line（ポリゴン/線を枠線描画）| point（点を発光ドット描画）",
+    "color": "線/点の色。ブランド＝単一の暖色（金）。warm系の濃淡で差別化（虹禁止）",
+    "opacityMul": "全体不透明度スライダーに対する倍率（admin=1.35で主役を強調 等）",
+    "altitude": "球面からの浮き（相対）。重なり順の微調整",
+    "enabled": "初期表示。ユーザのON/OFFはlocalStorageが優先",
+    "credit": "CC BYの帰属表示。フッターに自動掲載される（必須）",
+    "size / sizeField / sizeScale / sizeBase": "kind=point用。sizeField指定でデータ値に応じ点サイズを可変"
+  },
+  "layers": [
+    {
+      "id": "admin",
+      "name": "行政区域（都道府県）",
+      "file": "data/admin.geojson",
+      "kind": "line",
+      "color": "#d4a853",
+      "opacityMul": 1.35,
+      "altitude": 0.004,
+      "enabled": true,
+      "credit": "行政区域 N03（国土交通省 国土数値情報）／packaging: dataofjapan/land — CC BY 4.0"
+    }
+  ]
+}
