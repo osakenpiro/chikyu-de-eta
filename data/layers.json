@@ -1,16 +1,16 @@
 {
   "_about": "地球でえた レイヤー台帳 / layer manifest. レイヤを足す = ここに1エントリ追加 + data/ にGeoJSONを置く. 詳細は ../README.md と ./SOURCES.md.",
   "_fields": {
-    "id": "一意のキー（localStorageの表示ON/OFF保存に使う）",
-    "name": "UIに出る表示名",
-    "file": "GeoJSONのパス（EPSG:4326 / 経緯度）",
-    "kind": "line（ポリゴン/線を枠線描画）| point（点を発光ドット描画）",
-    "color": "線/点の色。ブランド＝単一の暖色（金）。warm系の濃淡で差別化（虹禁止）",
-    "opacityMul": "全体不透明度スライダーに対する倍率（admin=1.35で主役を強調 等）",
-    "altitude": "球面からの浮き（相対）。重なり順の微調整",
-    "enabled": "初期表示。ユーザのON/OFFはlocalStorageが優先",
-    "credit": "CC BYの帰属表示。フッターに自動掲載される（必須）",
-    "size / sizeField / sizeScale / sizeBase": "kind=point用。sizeField指定でデータ値に応じ点サイズを可変"
+    "id": "一意キー(localStorage表示ON/OFF)",
+    "name": "表示名",
+    "file": "GeoJSONパス(EPSG:4326)",
+    "kind": "line(ポリゴン/線を枠線) | point(点を発光ドット)",
+    "color": "単一の暖色(金)。warm系の濃淡で差別化(虹禁止)",
+    "opacityMul": "全体不透明度への倍率",
+    "altitude": "球面からの浮き(相対)",
+    "enabled": "初期表示",
+    "credit": "CC BY等の帰属表示(フッター自動掲載・必須)",
+    "size/sizeField/sizeScale/sizeBase": "kind=point用。sizeFieldでデータ連動サイズ"
   },
   "layers": [
     {
@@ -23,6 +23,21 @@
       "altitude": 0.004,
       "enabled": true,
       "credit": "行政区域 N03（国土交通省 国土数値情報）／packaging: dataofjapan/land — CC BY 4.0"
+    },
+    {
+      "id": "forest",
+      "name": "森林（森林率）",
+      "file": "data/forest.geojson",
+      "kind": "point",
+      "color": "#d8b066",
+      "opacityMul": 1.25,
+      "altitude": 0.012,
+      "size": 0.13,
+      "sizeField": "ratio",
+      "sizeScale": 1,
+      "sizeBase": 0,
+      "enabled": true,
+      "credit": "森林率：都道府県別森林率・人工林率（令和4年）林野庁 — 政府標準利用規約(CC BY 4.0)"
     }
   ]
 }
