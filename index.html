@@ -161,7 +161,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22a';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -342,7 +342,7 @@ function tick(){ controls.update();
 tick();
 
 // ---- load manifest + layers ----
-fetch('data/layers.json').then(r=>{ if(!r.ok) throw new Error('layers.json '+r.status); return r.json(); })
+fetch('data/layers.json?b='+BUILD).then(r=>{ if(!r.ok) throw new Error('layers.json '+r.status); return r.json(); })
   .then(cfg=>{
     const layers=(cfg.layers||[]);
     return layers.reduce((chain,l)=> chain.then(()=>loadLayer(l)), Promise.resolve())
@@ -354,7 +354,7 @@ fetch('data/layers.json').then(r=>{ if(!r.ok) throw new Error('layers.json '+r.s
 
 function loadLayer(l){
   if(settings.layers[l.id]===undefined) settings.layers[l.id] = l.enabled!==false;
-  return fetch(l.file).then(r=>{ if(!r.ok) throw new Error(l.id+' '+r.status); return r.json(); })
+  return fetch(l.file+(l.file.indexOf('?')<0?'?':'&')+'b='+BUILD).then(r=>{ if(!r.ok) throw new Error(l.id+' '+r.status); return r.json(); })
     .then(gj=>{
       const opMul=l.opacityMul!=null?l.opacityMul:1;
       let built, mat;
