@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>地球でえた — データで見る地球儀</title>
+<meta name="description" content="線だけで描かれた、裏側が透ける地球儀。日本の素材・資源を座標で見る。#全人類UX改善" />
+<meta name="theme-color" content="#06070b" />
+<!-- OGP -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="地球でえた — データで見る地球儀" />
+<meta property="og:description" content="線だけで描かれた、裏側が透ける地球儀。日本の素材・資源を座標で見る。" />
+<meta property="og:url" content="https://osakenpiro.github.io/chikyu-de-eta/" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="地球でえた — データで見る地球儀" />
+<meta name="twitter:description" content="線だけで描かれた、裏側が透ける地球儀。日本の素材・資源を座標で見る。" />
+<style>
+  :root{
+    --void:#06070b; --void2:#0a0c12;
+    --gold:#d4a853; --gold-dim:#7a6433;
+    --ink:#e8e6df; --mute:#8a8f99; --line:#1c2030;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--void);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow:hidden;overscroll-behavior:none;}
+  #globe{position:fixed;inset:0;touch-action:none;}
+  canvas{display:block}
+
+  /* header */
+  #brand{position:fixed;top:14px;left:16px;z-index:5;pointer-events:none;user-select:none}
+  #brand .t{font-size:15px;letter-spacing:.18em;color:var(--gold);font-weight:600}
+  #brand .s{font-size:10.5px;letter-spacing:.06em;color:var(--mute);margin-top:3px}
+
+  /* control panel */
+  #panel{position:fixed;top:12px;right:12px;z-index:6;width:248px;max-width:calc(100vw - 24px);
+    background:rgba(10,12,18,.82);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:12px;padding:12px 13px 13px;font-size:12px;color:var(--ink);
+    box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  #panel.collapsed .body{display:none}
+  #panel h2{margin:0;font-size:11px;letter-spacing:.14em;color:var(--gold);
+    display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-weight:600}
+  #panel h2 .chev{color:var(--mute);font-size:13px;transition:transform .2s}
+  #panel.collapsed h2 .chev{transform:rotate(-90deg)}
+  .row{margin-top:11px}
+  .row label{display:flex;justify-content:space-between;color:var(--mute);font-size:11px;margin-bottom:5px}
+  .row label b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;-webkit-appearance:none;height:3px;border-radius:3px;
+    background:linear-gradient(90deg,var(--gold-dim),var(--gold));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--gold);border:2px solid #1a1408;cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--gold);border:2px solid #1a1408;cursor:pointer}
+  .toggles{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
+  .toggles button{flex:1;min-width:64px;background:transparent;color:var(--mute);border:1px solid var(--line);
+    border-radius:8px;padding:7px 4px;font-size:11px;cursor:pointer;transition:.15s}
+  .toggles button.on{color:#1a1408;background:var(--gold);border-color:var(--gold);font-weight:600}
+  .toggles button:active{transform:scale(.97)}
+
+  /* about */
+  #aboutBtn{position:fixed;left:16px;bottom:16px;z-index:6;background:rgba(10,12,18,.82);
+    border:1px solid var(--line);color:var(--mute);border-radius:20px;padding:7px 14px;font-size:11px;
+    cursor:pointer;letter-spacing:.06em}
+  #about{position:fixed;inset:0;z-index:20;background:rgba(4,5,8,.92);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;padding:24px}
+  #about.show{display:flex}
+  #about .card{max-width:520px;background:var(--void2);border:1px solid var(--line);border-radius:16px;
+    padding:26px 26px 22px;line-height:1.85;font-size:13.5px}
+  #about h3{margin:0 0 12px;color:var(--gold);font-size:16px;letter-spacing:.08em}
+  #about p{margin:0 0 14px;color:var(--ink)}
+  #about .credits{font-size:11px;color:var(--mute);line-height:1.7;border-top:1px solid var(--line);padding-top:14px}
+  #about .credits a{color:var(--gold-dim)}
+  #about .x{position:absolute;top:18px;right:22px;color:var(--mute);font-size:24px;cursor:pointer;line-height:1}
+
+  /* footer credit */
+  #foot{position:fixed;right:14px;bottom:12px;z-index:4;font-size:10px;color:var(--mute);
+    text-align:right;line-height:1.5;pointer-events:none;max-width:46vw}
+  #foot b{color:var(--gold-dim);font-weight:500}
+
+  /* status */
+  #status{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;
+    color:var(--mute);font-size:12px;letter-spacing:.1em;text-align:center}
+  #status .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);
+    margin-right:8px;animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+  @media (max-width:560px){
+    #panel{width:208px;font-size:11.5px}
+    #brand .t{font-size:13px}
+    #foot{max-width:54vw}
+  }
+</style>
+</head>
+<body>
+<div id="globe"></div>
+
+<div id="brand">
+  <div class="t">地球でえた</div>
+  <div class="s">線だけの地球儀 · 日本の素材を座標で見る</div>
+</div>
+
+<div id="panel">
+  <h2 id="panelHead">表示パラメータ <span class="chev">▾</span></h2>
+  <div class="body">
+    <div class="row">
+      <label>線の不透明度 <b id="vOpacity">0.55</b></label>
+      <input id="opacity" type="range" min="0.05" max="1" step="0.01" value="0.55" />
+    </div>
+    <div class="row">
+      <label>裏側のフェード <b id="vFade">0.22</b></label>
+      <input id="fade" type="range" min="0" max="0.7" step="0.01" value="0.22" />
+    </div>
+    <div class="row">
+      <label>経緯線の密度 <b id="vGrid">15°</b></label>
+      <input id="grid" type="range" min="5" max="30" step="5" value="15" />
+    </div>
+    <div class="toggles">
+      <button id="tColor" data-on="0">白に切替</button>
+      <button id="tRotate" class="on" data-on="1">自動回転</button>
+    </div>
+  </div>
+</div>
+
+<button id="aboutBtn">これは何？</button>
+
+<div id="foot">
+  <div><b>境界</b> 国土数値情報 行政区域(N03)·国土交通省</div>
+  <div>packaged by dataofjapan/land · CC BY 4.0</div>
+</div>
+
+<div id="about">
+  <div class="card" style="position:relative">
+    <span class="x" id="aboutX">×</span>
+    <h3>地球でえた</h3>
+    <p>線だけで描かれた、裏側が透ける地球儀。「データで見る地球」。<br/>
+       主題は<b style="color:var(--gold)">日本の素材・資源</b>。ポータルではなく、<b style="color:var(--gold)">座標を持つものだけ</b>を載せる。</p>
+    <p style="color:var(--mute);font-size:12.5px">銀河儀（主観の星図）の双子＝この現実球。v0は背骨＝行政区域（都道府県）。
+       これから 森林・鉱区・伝統工芸の産地 を重ねていく。</p>
+    <div class="credits">
+      <div>境界データ：国土数値情報「行政区域データ（N03）」国土交通省</div>
+      <div>パッケージ：<a href="https://github.com/dataofjapan/land" target="_blank" rel="noopener">dataofjapan/land</a>（CC BY 4.0）</div>
+      <div>描画：Three.js（Globe.gl 流ワイヤーフレーム）</div>
+      <div style="margin-top:8px;color:var(--gold-dim)">#全人類UX改善 · osakenpiro</div>
+    </div>
+  </div>
+</div>
+
+<div id="status"><span class="dot"></span>地球を組み立てています…</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://esm.sh/three@0.160.1",
+    "three/addons/": "https://esm.sh/three@0.160.1/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const R = 100;                         // globe radius
+const LS_KEY = 'chikyu-de-eta-v0';
+const statusEl = document.getElementById('status');
+const isMobile = matchMedia('(max-width:560px)').matches;
+
+// ---- persisted settings ----
+const settings = Object.assign({
+  opacity: isMobile ? 0.5 : 0.55,
+  fade: 0.22,
+  grid: 15,
+  white: false,
+  rotate: true
+}, loadSettings());
+
+function loadSettings(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'{}'); }catch(e){ return {}; } }
+function saveSettings(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(settings)); }catch(e){} }
+
+// ---- coords (Globe.gl / three-globe convention) ----
+function toXYZ(lat, lng, alt=0){
+  const phi = (90 - lat) * Math.PI/180;
+  const theta = (90 - lng) * Math.PI/180;
+  const r = R * (1 + alt);
+  return [ r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta) ];
+}
+
+// ---- renderer / scene / camera ----
+const container = document.getElementById('globe');
+let renderer;
+try{
+  renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:'high-performance' });
+}catch(e){ fail('WebGL を初期化できませんでした。'); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
+renderer.setSize(innerWidth, innerHeight);
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 1, 4000);
+const camStart = toXYZ(36, 138, 1.35);            // frame Japan
+camera.position.set(camStart[0], camStart[1], camStart[2]);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.rotateSpeed = 0.55;
+controls.zoomSpeed = 0.8;
+controls.minDistance = R * 1.25;
+controls.maxDistance = R * 4.2;
+controls.autoRotate = settings.rotate;
+controls.autoRotateSpeed = 0.28;
+controls.target.set(0,0,0);
+
+// ---- starfield (brand: void + stars) ----
+(function stars(){
+  const N = isMobile ? 900 : 1600;
+  const pos = new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const r = 900 + Math.random()*900;
+    const u = Math.random()*2-1, t = Math.random()*Math.PI*2, s = Math.sqrt(1-u*u);
+    pos[i*3]=r*s*Math.cos(t); pos[i*3+1]=r*u; pos[i*3+2]=r*s*Math.sin(t);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const m = new THREE.PointsMaterial({ color:0x55607a, size:1.4, sizeAttenuation:false, transparent:true, opacity:0.55 });
+  scene.add(new THREE.Points(g,m));
+})();
+
+// ---- depth-fade additive line material (front bright, back faint -> reads as a sphere) ----
+const GOLD = new THREE.Color('#d4a853');
+const WHITE = new THREE.Color('#e8e6df');
+function makeLineMat(){
+  return new THREE.ShaderMaterial({
+    uniforms:{
+      uColor:{ value: (settings.white?WHITE:GOLD).clone() },
+      uOpacity:{ value: settings.opacity },
+      uBackFade:{ value: settings.fade },
+      uCamPos:{ value: new THREE.Vector3() }
+    },
+    vertexShader:`
+      varying vec3 vWorld; varying vec3 vNormal;
+      void main(){
+        vWorld = position;
+        vNormal = normalize(position);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      }`,
+    fragmentShader:`
+      uniform vec3 uColor; uniform float uOpacity; uniform float uBackFade; uniform vec3 uCamPos;
+      varying vec3 vWorld; varying vec3 vNormal;
+      void main(){
+        vec3 viewDir = normalize(uCamPos - vWorld);
+        float facing = dot(normalize(vNormal), viewDir);   // +1 front .. -1 back
+        float f = smoothstep(-1.0, 1.0, facing);
+        float a = uOpacity * mix(uBackFade, 1.0, f);
+        vec3 col = uColor * (0.55 + 0.85*f);                // additive: front glows
+        gl_FragColor = vec4(col, a);
+      }`,
+    transparent:true,
+    blending:THREE.AdditiveBlending,
+    depthWrite:false,
+    depthTest:false
+  });
+}
+
+// admin lines a touch brighter than graticule
+const gratMat = makeLineMat();
+const adminMat = makeLineMat();
+adminMat.uniforms.uOpacity.value = settings.opacity * 1.35;
+
+// ---- graticule (rebuildable density) ----
+let gratObj = null;
+function buildGraticule(step){
+  if(gratObj){ scene.remove(gratObj); gratObj.geometry.dispose(); }
+  const seg = [];
+  const S = 3; // sampling along each line (deg)
+  // parallels
+  for(let lat=-80; lat<=80; lat+=step){
+    for(let lng=-180; lng<180; lng+=S){
+      seg.push(toXYZ(lat,lng), toXYZ(lat,lng+S));
+    }
+  }
+  // meridians
+  for(let lng=-180; lng<180; lng+=step){
+    for(let lat=-86; lat<86; lat+=S){
+      seg.push(toXYZ(lat,lng), toXYZ(lat+S,lng));
+    }
+  }
+  const arr = new Float32Array(seg.length*3);
+  seg.forEach((p,i)=>{ arr[i*3]=p[0]; arr[i*3+1]=p[1]; arr[i*3+2]=p[2]; });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(arr,3));
+  gratObj = new THREE.LineSegments(g, gratMat);
+  gratObj.renderOrder = 1;
+  scene.add(gratObj);
+}
+buildGraticule(settings.grid);
+
+// ---- admin layer (loaded from GeoJSON) ----
+let adminObj = null;
+function buildAdmin(geojson){
+  const seg = [];
+  const pushRing = (ring)=>{
+    for(let i=0;i<ring.length-1;i++){
+      seg.push(toXYZ(ring[i][1], ring[i][0], 0.004), toXYZ(ring[i+1][1], ring[i+1][0], 0.004));
+    }
+  };
+  for(const f of geojson.features){
+    const g = f.geometry; if(!g) continue;
+    if(g.type==='Polygon') g.coordinates.forEach(pushRing);
+    else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>poly.forEach(pushRing));
+  }
+  const arr = new Float32Array(seg.length*3);
+  seg.forEach((p,i)=>{ arr[i*3]=p[0]; arr[i*3+1]=p[1]; arr[i*3+2]=p[2]; });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(arr,3));
+  adminObj = new THREE.LineSegments(geo, adminMat);
+  adminObj.renderOrder = 2;
+  scene.add(adminObj);
+  return seg.length/2;
+}
+
+// ---- UI wiring ----
+const $ = s=>document.querySelector(s);
+function syncLabels(){
+  $('#vOpacity').textContent = settings.opacity.toFixed(2);
+  $('#vFade').textContent = settings.fade.toFixed(2);
+  $('#vGrid').textContent = settings.grid + '°';
+}
+function applyColor(){
+  const c = settings.white?WHITE:GOLD;
+  gratMat.uniforms.uColor.value.copy(c);
+  adminMat.uniforms.uColor.value.copy(c);
+  $('#tColor').textContent = settings.white ? '金に切替' : '白に切替';
+}
+$('#opacity').value=settings.opacity; $('#fade').value=settings.fade; $('#grid').value=settings.grid;
+syncLabels(); applyColor();
+
+$('#opacity').addEventListener('input', e=>{
+  settings.opacity = +e.target.value;
+  gratMat.uniforms.uOpacity.value = settings.opacity;
+  adminMat.uniforms.uOpacity.value = settings.opacity*1.35;
+  syncLabels(); saveSettings();
+});
+$('#fade').addEventListener('input', e=>{
+  settings.fade = +e.target.value;
+  gratMat.uniforms.uBackFade.value = settings.fade;
+  adminMat.uniforms.uBackFade.value = settings.fade;
+  syncLabels(); saveSettings();
+});
+$('#grid').addEventListener('input', e=>{
+  settings.grid = +e.target.value; syncLabels();
+});
+$('#grid').addEventListener('change', ()=>{ buildGraticule(settings.grid); saveSettings(); });
+
+$('#tColor').addEventListener('click', ()=>{ settings.white=!settings.white; applyColor(); saveSettings(); });
+const rotBtn = $('#tRotate');
+rotBtn.classList.toggle('on', settings.rotate);
+rotBtn.addEventListener('click', ()=>{
+  settings.rotate=!settings.rotate; controls.autoRotate=settings.rotate;
+  rotBtn.classList.toggle('on', settings.rotate); saveSettings();
+});
+
+$('#panelHead').addEventListener('click', ()=> $('#panel').classList.toggle('collapsed'));
+$('#aboutBtn').addEventListener('click', ()=> $('#about').classList.add('show'));
+$('#aboutX').addEventListener('click', ()=> $('#about').classList.remove('show'));
+$('#about').addEventListener('click', e=>{ if(e.target.id==='about') $('#about').classList.remove('show'); });
+
+// ---- resize ----
+addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+}, {passive:true});
+
+// ---- loop ----
+function tick(){
+  controls.update();
+  gratMat.uniforms.uCamPos.value.copy(camera.position);
+  adminMat.uniforms.uCamPos.value.copy(camera.position);
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+
+function fail(msg){ statusEl.innerHTML = '⚠ '+msg; }
+
+// ---- load data ----
+fetch('data/admin.geojson')
+  .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(gj=>{
+    const n = buildAdmin(gj);
+    statusEl.style.display='none';
+    console.log('[chikyu-de-eta] admin loaded:', gj.features.length, 'prefectures,', n, 'segments');
+  })
+  .catch(err=>{
+    console.error('[chikyu-de-eta] admin load failed', err);
+    statusEl.innerHTML = '経緯線は表示中。行政区域データの読込に失敗しました（'+err.message+'）。';
+    setTimeout(()=>{ statusEl.style.opacity='0.5'; }, 200);
+  });
+</script>
+</body>
+</html>
