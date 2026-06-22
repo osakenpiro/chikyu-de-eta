@@ -145,10 +145,10 @@
        レイヤーは <code>data/layers.json</code> に1行足すだけで増える設計。</p>
     <div style="font-size:12px;line-height:1.95;margin-bottom:14px;border-top:1px solid var(--line);padding-top:14px">
       <div style="color:var(--gold);letter-spacing:.1em;margin-bottom:6px">凡例（形＝意味）</div>
-      <div>━ 線 ＝ 境界（国・県）／ ● 点 ＝ 分布（鉱区）</div>
-      <div>◍ 明るさ ＝ 割合（森林率＝緑の輝き）</div>
-      <div>▮ 高さ ＝ 量（工芸品数・人口）＋先端の大きさ</div>
-      <div style="color:var(--mute)">色相＝種類（森=緑・鉱=琥珀…）。1層につき主役は1チャンネル。</div>
+      <div id="legendCh"></div>
+      
+      
+      
     </div>
     <div class="credits" id="aboutCredits"></div>
   </div>
@@ -168,7 +168,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22d';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22e';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -251,6 +251,41 @@ function makePointMat(color, opMul, size){
   return m;
 }
 
+// ---- palette / pictogram / channel (legend grammar v0.4) ----
+const PALDEF={structure:'#d4a853',water:'#5b9bd5',mineral:'#d9a441',energy:'#d2603a',forest:'#74b86a',craft:'#e0a35c',population:'#c9b48c'};
+let PAL={};
+function colorOf(L){ return L.color || PAL[L.category] || PALDEF[L.category] || '#d4a853'; }
+function channelOf(L){ if(L.kind==='line')return 'line'; if(L.kind==='column')return 'height'; if(L.kind==='point'&&L.brightnessField)return 'brightness'; if(L.kind==='point')return 'point'; return null; }
+const _pcv={};
+function makePictoCanvas(kind,hex){
+  const key=kind+hex; if(_pcv[key]) return _pcv[key];
+  const s=64, cv=document.createElement('canvas'); cv.width=cv.height=s;
+  const x=cv.getContext('2d'); x.strokeStyle=hex; x.fillStyle=hex; x.lineWidth=6; x.lineCap='round'; x.lineJoin='round';
+  if(kind==='person'){ x.beginPath(); x.arc(32,17,9,0,7); x.fill(); x.beginPath(); x.moveTo(32,28); x.lineTo(32,45); x.stroke(); x.beginPath(); x.moveTo(19,54); x.lineTo(32,42); x.lineTo(45,54); x.stroke(); x.beginPath(); x.moveTo(21,35); x.lineTo(43,35); x.stroke(); }
+  else if(kind==='coin'){ x.beginPath(); x.arc(32,32,19,0,7); x.stroke(); x.beginPath(); x.arc(32,32,11,0,7); x.stroke(); x.beginPath(); x.arc(32,32,3.5,0,7); x.fill(); }
+  else { x.beginPath(); x.moveTo(32,11); x.lineTo(51,30); x.lineTo(32,53); x.lineTo(13,30); x.closePath(); x.stroke(); x.beginPath(); x.moveTo(13,30); x.lineTo(51,30); x.stroke(); }
+  _pcv[key]=cv; return cv;
+}
+const _ptex={};
+function pictoTexture(kind,hex){ const key=kind+hex; if(_ptex[key]) return _ptex[key]; const t=new THREE.CanvasTexture(makePictoCanvas(kind,hex)); t.needsUpdate=true; _ptex[key]=t; return t; }
+const CATLABEL={structure:'骨格・境界',water:'水',mineral:'鉱',energy:'エネルギー',forest:'森・植生',craft:'工芸・文化',population:'人口'};
+const SHAPEDEF={line:['━','線','境界'],point:['●','点','分布'],brightness:['◍','明るさ','割合'],height:['▮','高さ','量（＋先端）']};
+function buildChannelLegend(defs){
+  const el=document.getElementById('legendCh'); if(!el) return;
+  const on=defs;
+  const seenSh={}, shRows=[];
+  on.forEach(L=>{ const c=channelOf(L); if(c&&!seenSh[c]){ seenSh[c]=1; const d=SHAPEDEF[c]; shRows.push('<div><span style="color:'+colorOf(L)+'">'+d[0]+'</span> '+d[1]+' ＝ '+d[2]+'</div>'); } });
+  const seenP={}, pRows=[];
+  on.forEach(L=>{ if(L.pictogram&&!seenP[L.pictogram]){ seenP[L.pictogram]=1; const u=makePictoCanvas(L.pictogram,colorOf(L)).toDataURL(); pRows.push('<div><img src="'+u+'" style="width:15px;height:15px;vertical-align:-3px;margin-right:4px"/>＝ '+(CATLABEL[L.category]||L.name)+'</div>'); } });
+  const seenC={}, cRows=[];
+  on.forEach(L=>{ if(L.category&&!seenC[L.category]){ seenC[L.category]=1; cRows.push('<span style="display:inline-block;margin:0 8px 3px 0;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+colorOf(L)+';vertical-align:0;margin-right:3px"></span>'+(CATLABEL[L.category]||L.category)+'</span>'); } });
+  let h='<div>'+shRows.join('')+'</div>';
+  if(pRows.length) h+='<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><div style="color:var(--mute);font-size:10.5px;margin-bottom:2px">実体</div>'+pRows.join('')+'</div>';
+  h+='<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><div style="color:var(--mute);font-size:10.5px;margin-bottom:3px">色相＝種類</div>'+cRows.join('')+'</div>';
+  h+='<div style="color:var(--mute);margin-top:6px;font-size:10.5px">1層につき主役は1チャンネル。</div>';
+  el.innerHTML=h;
+}
+
 const allMats=[];   // every fade material (graticule + layers) for global control
 const reg={};       // layer id -> {cfg,obj,mat}
 
@@ -320,7 +355,9 @@ function buildColumnLayer(gj, cfg, lineMat, pointMat){
   tg.setAttribute('aSize',new THREE.BufferAttribute(new Float32Array(tsz),1));
   tg.setAttribute('aBright',new THREE.BufferAttribute(new Float32Array(tbr),1));
   const tips=new THREE.Points(tg,pointMat); tips.renderOrder=5;
-  const grp=new THREE.Group(); grp.add(spikes); grp.add(tips);
+  const grp=new THREE.Group(); grp.add(spikes);
+  if(cfg.pictogram){ const pm2=new THREE.SpriteMaterial({map:pictoTexture(cfg.pictogram,colorOf(cfg)),transparent:true,opacity:0.96,depthWrite:false,depthTest:false}); for(let i=0;i<tpos.length;i+=3){ const sp=new THREE.Sprite(pm2); const sc=R*0.05; sp.scale.set(sc,sc,1); sp.position.set(tpos[i],tpos[i+1],tpos[i+2]); grp.add(sp); } }
+  else { grp.add(tips); }
   return {obj:grp, count:rows.length};
 }
 
@@ -330,7 +367,7 @@ function layerUI(){
   Object.values(reg).forEach(({cfg,obj})=>{
     const on=!!settings.layers[cfg.id];
     const row=document.createElement('div'); row.className='lrow'+(on?' on':'');
-    row.innerHTML=`<span class="dot" style="color:${cfg.color}"></span><span class="sw"></span><span class="nm">${cfg.name}</span>`;
+    row.innerHTML=`<span class="dot" style="color:${colorOf(cfg)}"></span><span class="sw"></span><span class="nm">${cfg.name}</span>`;
     row.addEventListener('click',()=>{ const v=!settings.layers[cfg.id]; settings.layers[cfg.id]=v;
       obj.visible=v; row.classList.toggle('on',v); save(); });
     box.appendChild(row);
@@ -378,9 +415,9 @@ tick();
 // ---- load manifest + layers ----
 fetch('data/layers.json?b='+BUILD).then(r=>{ if(!r.ok) throw new Error('layers.json '+r.status); return r.json(); })
   .then(cfg=>{
-    const layers=(cfg.layers||[]);
+    const layers=(cfg.layers||[]); PAL=cfg._palette||{};
     return layers.reduce((chain,l)=> chain.then(()=>loadLayer(l)), Promise.resolve())
-      .then(()=>{ layerUI(); credits(); statusEl.style.display='none';
+      .then(()=>{ layerUI(); credits(); buildChannelLegend(layers); statusEl.style.display='none';
         console.log('[chikyu-de-eta] ready:', Object.keys(reg).length, 'layers'); });
   })
   .catch(err=>{ console.error('[chikyu-de-eta] manifest failed', err);
@@ -392,9 +429,9 @@ function loadLayer(l){
     .then(gj=>{
       const opMul=l.opacityMul!=null?l.opacityMul:1;
       let built, mat;
-      if(l.kind==='point'){ mat=makePointMat(l.color, opMul, l.size!=null?l.size:2.4); built=buildPointLayer(gj,l,mat); }
-      else if(l.kind==='column'){ mat=makeLineMat(l.color, opMul); const pm=makePointMat(l.color, opMul, l.tipSize!=null?l.tipSize:0.5); if(settings.white) pm.uniforms.uColor.value.copy(WHITE); allMats.push(pm); built=buildColumnLayer(gj,l,mat,pm); }
-      else { mat=makeLineMat(l.color, opMul); built=buildLineLayer(gj,l,mat); }
+      if(l.kind==='point'){ mat=makePointMat(colorOf(l), opMul, l.size!=null?l.size:2.4); built=buildPointLayer(gj,l,mat); }
+      else if(l.kind==='column'){ mat=makeLineMat(colorOf(l), opMul); const pm=makePointMat(colorOf(l), opMul, l.tipSize!=null?l.tipSize:0.5); if(settings.white) pm.uniforms.uColor.value.copy(WHITE); allMats.push(pm); built=buildColumnLayer(gj,l,mat,pm); }
+      else { mat=makeLineMat(colorOf(l), opMul); built=buildLineLayer(gj,l,mat); }
       allMats.push(mat);
       built.obj.visible = !!settings.layers[l.id];
       scene.add(built.obj);
