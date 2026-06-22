@@ -94,7 +94,8 @@
       "sizeBase": 1,
       "enabled": false,
       "credit": "鉱区：国土数値情報 鉱区データ C22（昭和59年/1984・国土交通省）— CC BY 4.0 ※歴史データ",
-      "category": "mineral"
+      "category": "mineral",
+      "pictogram": "gem"
     }
   ],
   "_palette": {

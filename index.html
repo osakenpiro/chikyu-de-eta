@@ -168,7 +168,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22f';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22g';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -272,7 +272,7 @@ const CATLABEL={structure:'骨格・境界',water:'水',mineral:'鉱',energy:'�
 const SHAPEDEF={line:['━','線','境界'],point:['●','点','分布'],brightness:['◍','明るさ','割合'],height:['▮','高さ','量（＋先端）']};
 function buildChannelLegend(defs){
   const el=document.getElementById('legendCh'); if(!el) return;
-  const on=defs;
+  const on=defs.filter(L=>settings.layers[L.id]);
   const seenSh={}, shRows=[];
   on.forEach(L=>{ const c=channelOf(L); if(c&&!seenSh[c]){ seenSh[c]=1; const d=SHAPEDEF[c]; shRows.push('<div><span style="color:'+colorOf(L)+'">'+d[0]+'</span> '+d[1]+' ＝ '+d[2]+'</div>'); } });
   const seenP={}, pRows=[];
@@ -369,7 +369,7 @@ function layerUI(){
     const row=document.createElement('div'); row.className='lrow'+(on?' on':'');
     row.innerHTML=`<span class="dot" style="color:${colorOf(cfg)}"></span><span class="sw"></span><span class="nm">${cfg.name}</span>`;
     row.addEventListener('click',()=>{ const v=!settings.layers[cfg.id]; settings.layers[cfg.id]=v;
-      obj.visible=v; row.classList.toggle('on',v); save(); });
+      obj.visible=v; row.classList.toggle('on',v); save(); buildChannelLegend(Object.values(reg).map(r=>r.cfg)); });
     box.appendChild(row);
   });
 }
