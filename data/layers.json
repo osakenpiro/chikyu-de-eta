@@ -1,21 +1,32 @@
 {
-  "_about": "地球でえた レイヤー台帳 / layer manifest. レイヤを足す = ここに1エントリ追加 + data/ にGeoJSONを置く. 詳細は ../README.md と ./SOURCES.md.",
+  "_about": "地球でえた レイヤー台帳 / layer manifest. レイヤ追加=ここに1エントリ + data/にGeoJSON. これは世界地図(地球儀)で、世界レイヤも日本レイヤも同じ枠組みで載る. 詳細は ../README.md と ./SOURCES.md.",
   "_fields": {
-    "id": "一意キー(localStorage表示ON/OFF)",
+    "id": "一意キー",
     "name": "表示名",
     "file": "GeoJSONパス(EPSG:4326)",
-    "kind": "line(ポリゴン/線を枠線) | point(点を発光ドット)",
+    "kind": "line|point",
     "color": "単一の暖色(金)。warm系の濃淡で差別化(虹禁止)",
     "opacityMul": "全体不透明度への倍率",
     "altitude": "球面からの浮き(相対)",
     "enabled": "初期表示",
-    "credit": "CC BY等の帰属表示(フッター自動掲載・必須)",
+    "credit": "帰属表示(フッター自動掲載)",
     "size/sizeField/sizeScale/sizeBase": "kind=point用。sizeFieldでデータ連動サイズ"
   },
   "layers": [
     {
+      "id": "world",
+      "name": "世界の国境",
+      "file": "data/world.geojson",
+      "kind": "line",
+      "color": "#6f5a30",
+      "opacityMul": 0.7,
+      "altitude": 0.002,
+      "enabled": true,
+      "credit": "国境：Natural Earth（1:110m, パブリックドメイン）"
+    },
+    {
       "id": "admin",
-      "name": "行政区域（都道府県）",
+      "name": "日本・行政区域（都道府県）",
       "file": "data/admin.geojson",
       "kind": "line",
       "color": "#d4a853",
@@ -26,7 +37,7 @@
     },
     {
       "id": "forest",
-      "name": "森林（森林率）",
+      "name": "日本・森林率",
       "file": "data/forest.geojson",
       "kind": "point",
       "color": "#d8b066",
@@ -38,6 +49,34 @@
       "sizeBase": 0,
       "enabled": true,
       "credit": "森林率：都道府県別森林率・人工林率（令和4年）林野庁 — 政府標準利用規約(CC BY 4.0)"
+    },
+    {
+      "id": "crafts",
+      "name": "日本・伝統的工芸品（指定品目数）",
+      "file": "data/crafts.geojson",
+      "kind": "point",
+      "color": "#e0a35c",
+      "opacityMul": 1.25,
+      "altitude": 0.013,
+      "size": 0.42,
+      "sizeField": "count",
+      "sizeScale": 1,
+      "sizeBase": 2,
+      "enabled": false,
+      "credit": "伝統的工芸品 指定品目数（令和7年・経済産業省）"
+    },
+    {
+      "id": "mining",
+      "name": "日本・鉱区（1984）",
+      "file": "data/mining.geojson",
+      "kind": "point",
+      "color": "#c98f4a",
+      "opacityMul": 1.0,
+      "altitude": 0.01,
+      "size": 1.6,
+      "sizeBase": 1,
+      "enabled": false,
+      "credit": "鉱区：国土数値情報 鉱区データ C22（昭和59年/1984・国土交通省）— CC BY 4.0 ※歴史データ"
     }
   ]
 }
