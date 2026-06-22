@@ -29,19 +29,17 @@
     },
     {
       "id": "world_pop",
-      "name": "世界・人口（高さ）",
+      "name": "世界・人口密度（明るさ）",
       "file": "data/world_pop.geojson",
-      "kind": "column",
+      "kind": "point",
       "opacityMul": 1.1,
-      "heightField": "pop",
-      "heightTransform": "sqrt",
-      "heightScale": 0.26,
-      "heightBase": 0.004,
-      "tipSize": 0.6,
+      "altitude": 0.012,
+      "size": 3.0,
+      "brightnessField": "density",
+      "brightnessMax": 500,
       "enabled": false,
-      "credit": "人口：Natural Earth POP_EST（1:110m, パブリックドメイン）",
-      "category": "population",
-      "pictogram": "person"
+      "credit": "人口：Natural Earth POP_EST（1:110m, パブリックドメイン）／密度＝人口÷面積、面積はNatural Earth国境ポリゴンから球面積分で算出",
+      "category": "population"
     },
     {
       "id": "admin",
