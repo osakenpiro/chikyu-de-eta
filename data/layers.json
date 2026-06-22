@@ -10,7 +10,9 @@
     "altitude": "球面からの浮き(相対)",
     "enabled": "初期表示",
     "credit": "帰属表示(フッター自動掲載)",
-    "size/sizeField/sizeScale/sizeBase": "kind=point用。sizeFieldでデータ連動サイズ"
+    "size/sizeField/sizeScale/sizeBase": "kind=point用。sizeFieldでデータ連動サイズ",
+    "category": "カテゴリ(palette参照): structure/water/mineral/energy/forest/craft/population",
+    "pictogram": "実体ピクト: person|coin|gem"
   },
   "layers": [
     {
@@ -22,14 +24,14 @@
       "opacityMul": 0.7,
       "altitude": 0.002,
       "enabled": true,
-      "credit": "国境：Natural Earth（1:110m, パブリックドメイン）"
+      "credit": "国境：Natural Earth（1:110m, パブリックドメイン）",
+      "category": "structure"
     },
     {
       "id": "world_pop",
       "name": "世界・人口（高さ）",
       "file": "data/world_pop.geojson",
       "kind": "column",
-      "color": "#cdb27a",
       "opacityMul": 1.1,
       "heightField": "pop",
       "heightTransform": "sqrt",
@@ -37,7 +39,9 @@
       "heightBase": 0.004,
       "tipSize": 0.6,
       "enabled": false,
-      "credit": "人口：Natural Earth POP_EST（1:110m, パブリックドメイン）"
+      "credit": "人口：Natural Earth POP_EST（1:110m, パブリックドメイン）",
+      "category": "population",
+      "pictogram": "person"
     },
     {
       "id": "admin",
@@ -48,28 +52,28 @@
       "opacityMul": 1.35,
       "altitude": 0.004,
       "enabled": true,
-      "credit": "行政区域 N03（国土交通省 国土数値情報）／packaging: dataofjapan/land — CC BY 4.0"
+      "credit": "行政区域 N03（国土交通省 国土数値情報）／packaging: dataofjapan/land — CC BY 4.0",
+      "category": "structure"
     },
     {
       "id": "forest",
       "name": "日本・森林率（明るさ＝率）",
       "file": "data/forest.geojson",
       "kind": "point",
-      "color": "#74b86a",
       "opacityMul": 1.3,
       "altitude": 0.012,
       "size": 3.0,
       "enabled": true,
       "credit": "森林率：都道府県別森林率・人工林率（令和4年）林野庁 — 政府標準利用規約(CC BY 4.0)",
       "brightnessField": "ratio",
-      "brightnessMax": 85
+      "brightnessMax": 85,
+      "category": "forest"
     },
     {
       "id": "crafts",
       "name": "日本・伝統的工芸品（指定品目数＝高さ）",
       "file": "data/crafts.geojson",
       "kind": "column",
-      "color": "#e0a35c",
       "opacityMul": 1.4,
       "altitude": 0.013,
       "enabled": true,
@@ -77,20 +81,31 @@
       "heightField": "count",
       "heightScale": 0.2,
       "heightBase": 0.006,
-      "tipSize": 0.5
+      "tipSize": 0.5,
+      "category": "craft",
+      "pictogram": "coin"
     },
     {
       "id": "mining",
       "name": "日本・鉱区（1984）",
       "file": "data/mining.geojson",
       "kind": "point",
-      "color": "#c98f4a",
       "opacityMul": 1.0,
       "altitude": 0.01,
       "size": 1.6,
       "sizeBase": 1,
       "enabled": false,
-      "credit": "鉱区：国土数値情報 鉱区データ C22（昭和59年/1984・国土交通省）— CC BY 4.0 ※歴史データ"
+      "credit": "鉱区：国土数値情報 鉱区データ C22（昭和59年/1984・国土交通省）— CC BY 4.0 ※歴史データ",
+      "category": "mineral"
     }
-  ]
+  ],
+  "_palette": {
+    "structure": "#d4a853",
+    "water": "#5b9bd5",
+    "mineral": "#d9a441",
+    "energy": "#d2603a",
+    "forest": "#74b86a",
+    "craft": "#e0a35c",
+    "population": "#c9b48c"
+  }
 }
