@@ -161,7 +161,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22b';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22c';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -290,6 +290,17 @@ function buildPointLayer(gj, cfg, mat){
   const o=new THREE.Points(geo,mat); o.renderOrder=3; return {obj:o, count:pos.length/3};
 }
 
+function buildColumnLayer(gj, cfg, mat){
+  const seg=[], hf=cfg.heightField, hs=cfg.heightScale!=null?cfg.heightScale:0.01, hb=cfg.heightBase!=null?cfg.heightBase:0.004;
+  const add=(lng,lat,pr)=>{ let v=0; if(hf&&pr&&pr[hf]!=null) v=+pr[hf]; const h=hb+v*hs; seg.push(toXYZ(lat,lng,0.001), toXYZ(lat,lng,h)); };
+  for(const f of gj.features){ const g=f.geometry; if(!g) continue; const pr=f.properties||{};
+    if(g.type==='Point') add(g.coordinates[0],g.coordinates[1],pr);
+    else if(g.type==='MultiPoint') g.coordinates.forEach(c=>add(c[0],c[1],pr)); }
+  const arr=new Float32Array(seg.length*3); seg.forEach((p,i)=>{arr[i*3]=p[0];arr[i*3+1]=p[1];arr[i*3+2]=p[2];});
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(arr,3));
+  const o=new THREE.LineSegments(geo,mat); o.renderOrder=4; return {obj:o, count:seg.length/2};
+}
+
 // ---- UI builders ----
 function layerUI(){
   const box=$('#layerList'); box.innerHTML='';
@@ -359,6 +370,7 @@ function loadLayer(l){
       const opMul=l.opacityMul!=null?l.opacityMul:1;
       let built, mat;
       if(l.kind==='point'){ mat=makePointMat(l.color, opMul, l.size!=null?l.size:2.4); built=buildPointLayer(gj,l,mat); }
+      else if(l.kind==='column'){ mat=makeLineMat(l.color, opMul); built=buildColumnLayer(gj,l,mat); }
       else { mat=makeLineMat(l.color, opMul); built=buildLineLayer(gj,l,mat); }
       allMats.push(mat);
       built.obj.visible = !!settings.layers[l.id];

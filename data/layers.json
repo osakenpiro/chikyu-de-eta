@@ -52,18 +52,17 @@
     },
     {
       "id": "crafts",
-      "name": "日本・伝統的工芸品（指定品目数）",
+      "name": "日本・伝統的工芸品（指定品目数＝高さ）",
       "file": "data/crafts.geojson",
-      "kind": "point",
+      "kind": "column",
       "color": "#e0a35c",
-      "opacityMul": 1.25,
+      "opacityMul": 1.4,
       "altitude": 0.013,
-      "size": 0.42,
-      "sizeField": "count",
-      "sizeScale": 1,
-      "sizeBase": 2,
-      "enabled": false,
-      "credit": "伝統的工芸品 指定品目数（令和7年・経済産業省）"
+      "enabled": true,
+      "credit": "伝統的工芸品 指定品目数（令和7年・経済産業省）",
+      "heightField": "count",
+      "heightScale": 0.009,
+      "heightBase": 0.004
     },
     {
       "id": "mining",
