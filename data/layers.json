@@ -67,6 +67,16 @@
       "category": "energy"
     },
     {
+      "id": "flags",
+      "name": "世界・国旗（クリックで国へ）",
+      "file": "data/countries.geojson",
+      "kind": "flags",
+      "enabled": false,
+      "altitude": 0.03,
+      "credit": "国旗：flagcdn.com（主要25カ国・クリックで国別ブリーフィング）",
+      "category": "structure"
+    },
+    {
       "id": "admin",
       "name": "日本・行政区域（都道府県）",
       "file": "data/admin.geojson",

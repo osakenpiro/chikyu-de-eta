@@ -95,6 +95,27 @@
     #brand .t{font-size:13px}
     #foot{max-width:54vw}
   }
+  /* country briefing HUD */
+  #brief{position:fixed;inset:0;z-index:30;display:none;pointer-events:none}
+  #brief.show{display:block}
+  #brief .card{position:absolute;left:50%;bottom:7%;transform:translate(-50%,18px);width:min(560px,92vw);
+    background:linear-gradient(180deg,rgba(12,14,20,.74),rgba(8,10,15,.92));border:1px solid var(--gold-dim);
+    border-radius:14px;padding:17px 22px 30px;backdrop-filter:blur(7px);opacity:0;transition:opacity .55s ease,transform .55s ease;
+    pointer-events:auto;box-shadow:0 10px 50px rgba(0,0,0,.6),inset 0 0 0 1px rgba(212,168,83,.10)}
+  #brief.show .card{opacity:1;transform:translate(-50%,0)}
+  #brief .scan{position:absolute;inset:0;border-radius:14px;pointer-events:none;opacity:.5;
+    background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(212,168,83,.03) 3px 4px)}
+  #brief .hd{display:flex;align-items:center;gap:14px;margin-bottom:15px;position:relative}
+  #brief .flag{width:56px;height:38px;border-radius:3px;object-fit:cover;border:1px solid rgba(255,255,255,.18);box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  #brief .ttl{font-size:19px;letter-spacing:.04em;color:var(--gold);font-weight:600;line-height:1.2}
+  #brief .sub{font-size:10px;color:var(--mute);letter-spacing:.26em;margin-top:3px}
+  #brief .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 20px;position:relative}
+  #brief .stat{border-left:2px solid rgba(212,168,83,.45);padding-left:11px}
+  #brief .stat .k{font-size:10px;color:var(--mute);letter-spacing:.1em;margin-bottom:1px}
+  #brief .stat .v{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+  #brief .x{position:absolute;top:13px;right:16px;color:var(--mute);font-size:18px;cursor:pointer;line-height:1;z-index:2}
+  #brief .x:hover{color:var(--gold)}
+  #brief .hint{position:absolute;left:0;right:0;bottom:9px;text-align:center;font-size:10px;color:var(--mute);letter-spacing:.12em}
 </style>
 </head>
 <body>
@@ -164,11 +185,17 @@
   }
 }
 </script>
+<div id="brief"><div class="card">
+  <span class="x" id="briefX">✕</span><div class="scan"></div>
+  <div class="hd"><img class="flag" id="bFlag" alt=""/><div><div class="ttl" id="bName"></div><div class="sub">COUNTRY BRIEFING</div></div></div>
+  <div class="grid" id="bGrid"></div>
+  <div class="hint">✕ または Esc で地球へ戻る</div>
+</div></div>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22h';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22i';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -255,7 +282,7 @@ function makePointMat(color, opMul, size){
 const PALDEF={structure:'#d4a853',water:'#5b9bd5',mineral:'#d9a441',energy:'#d2603a',forest:'#74b86a',craft:'#e0a35c',population:'#c9b48c'};
 let PAL={};
 function colorOf(L){ return L.color || PAL[L.category] || PALDEF[L.category] || '#d4a853'; }
-function channelOf(L){ if(L.kind==='line')return 'line'; if(L.kind==='column')return 'height'; if(L.kind==='point'&&L.brightnessField)return 'brightness'; if(L.kind==='point')return 'point'; return null; }
+function channelOf(L){ if(L.kind==='flags')return 'flag'; if(L.kind==='line')return 'line'; if(L.kind==='column')return 'height'; if(L.kind==='point'&&L.brightnessField)return 'brightness'; if(L.kind==='point')return 'point'; return null; }
 const _pcv={};
 function makePictoCanvas(kind,hex){
   const key=kind+hex; if(_pcv[key]) return _pcv[key];
@@ -269,7 +296,7 @@ function makePictoCanvas(kind,hex){
 const _ptex={};
 function pictoTexture(kind,hex){ const key=kind+hex; if(_ptex[key]) return _ptex[key]; const t=new THREE.CanvasTexture(makePictoCanvas(kind,hex)); t.needsUpdate=true; _ptex[key]=t; return t; }
 const CATLABEL={structure:'骨格・境界',water:'水',mineral:'鉱',energy:'エネルギー',forest:'森・植生',craft:'工芸・文化',population:'人口'};
-const SHAPEDEF={line:['━','線','境界'],point:['●','点','分布'],brightness:['◍','明るさ','割合'],height:['▮','高さ','量（＋先端）']};
+const SHAPEDEF={line:['━','線','境界'],point:['●','点','分布'],brightness:['◍','明るさ','割合'],height:['▮','高さ','量（＋先端）'],flag:['⚑','国旗','クリックで国へ']};
 function buildChannelLegend(defs){
   const el=document.getElementById('legendCh'); if(!el) return;
   const on=defs.filter(L=>settings.layers[L.id]);
@@ -361,6 +388,78 @@ function buildColumnLayer(gj, cfg, lineMat, pointMat){
   return {obj:grp, count:rows.length};
 }
 
+// ---- flags / country briefing (game-style) ----
+const flagSprites=[];
+const _texLoader=new THREE.TextureLoader(); _texLoader.setCrossOrigin('anonymous');
+function buildFlagLayer(gj, cfg){
+  const grp=new THREE.Group(); const alt=cfg.altitude!=null?cfg.altitude:0.03;
+  (gj.features||[]).forEach(f=>{
+    const c=f.geometry&&f.geometry.coordinates, iso=(f.properties.iso2||'').toLowerCase();
+    if(!c||!iso) return;
+    const pos=toXYZ(c[1],c[0],alt);
+    const tex=_texLoader.load('https://flagcdn.com/w80/'+iso+'.png');
+    const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false});
+    const sp=new THREE.Sprite(mat); const sz=R*0.06; sp.scale.set(sz*1.5,sz,1);
+    sp.position.set(pos[0],pos[1],pos[2]); sp.userData=f.properties; sp.renderOrder=8;
+    grp.add(sp); flagSprites.push(sp);
+  });
+  return {obj:grp, count:flagSprites.length, flags:true};
+}
+const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2(); let _down=null;
+renderer.domElement.addEventListener('pointerdown',e=>{ _down=[e.clientX,e.clientY]; });
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!_down) return; const moved=Math.hypot(e.clientX-_down[0],e.clientY-_down[1]); _down=null;
+  if(moved>6 || brief.active || !settings.layers['flags'] || !flagSprites.length) return;
+  _ndc.x=(e.clientX/innerWidth)*2-1; _ndc.y=-(e.clientY/innerHeight)*2+1;
+  _ray.setFromCamera(_ndc,camera);
+  const hit=_ray.intersectObjects(flagSprites,false)[0];
+  if(hit) openBriefing(hit.object.userData, hit.object.position.clone());
+});
+const FOV0=camera.fov;
+const brief={active:false,phase:'in',t0:0,durIn:1.15,durOut:0.85,
+  pStart:new THREE.Vector3(),pEnd:new THREE.Vector3(),tStart:new THREE.Vector3(),tEnd:new THREE.Vector3(),
+  fStart:45,fEnd:80,origin:new THREE.Vector3(),originTgt:new THREE.Vector3()};
+function _ease(x){ return x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
+function openBriefing(props,worldPos){
+  if(brief.active) return;
+  brief.origin.copy(camera.position); brief.originTgt.copy(controls.target);
+  const dir=worldPos.clone().normalize();
+  brief.pStart.copy(camera.position); brief.pEnd.copy(dir.clone().multiplyScalar(R*1.52));
+  brief.tStart.copy(controls.target); brief.tEnd.copy(worldPos);
+  brief.fStart=camera.fov; brief.fEnd=80;
+  brief.phase='in'; brief.t0=performance.now(); brief.active=true;
+  controls.enabled=false; controls.autoRotate=false;
+  fillBrief(props); document.getElementById('brief').classList.add('show');
+}
+function closeBriefing(){
+  if(!brief.active||brief.phase==='out') return;
+  brief.phase='out'; brief.t0=performance.now();
+  brief.pStart.copy(camera.position); brief.pEnd.copy(brief.origin);
+  brief.tStart.copy(controls.target); brief.tEnd.copy(brief.originTgt);
+  brief.fStart=camera.fov; brief.fEnd=FOV0;
+  document.getElementById('brief').classList.remove('show');
+}
+function updateBrief(){
+  const dur=(brief.phase==='in'?brief.durIn:brief.durOut)*1000;
+  let k=(performance.now()-brief.t0)/dur; if(k>1)k=1; const e=_ease(k);
+  camera.position.lerpVectors(brief.pStart,brief.pEnd,e);
+  camera.fov=brief.fStart+(brief.fEnd-brief.fStart)*e; camera.updateProjectionMatrix();
+  controls.target.lerpVectors(brief.tStart,brief.tEnd,e); camera.lookAt(controls.target);
+  if(k>=1 && brief.phase==='out'){ brief.active=false; controls.target.copy(brief.originTgt); controls.enabled=true; controls.autoRotate=settings.rotate; }
+}
+function fillBrief(p){
+  const iso=(p.iso2||'').toLowerCase();
+  document.getElementById('bFlag').src='https://flagcdn.com/w160/'+iso+'.png';
+  document.getElementById('bName').textContent=(p.name_ja||p.name);
+  const fj={Coal:'石炭',Gas:'天然ガス',Hydro:'水力',Nuclear:'原子力',Oil:'石油',Solar:'太陽光',Wind:'風力'};
+  const n=x=>Number(x).toLocaleString('en-US');
+  const rows=[['人口',n(p.pop)+' 人'],['人口密度',p.density+' /km²'],['発電所 (1GW↑)',n(p.plants_n)+' 基'],
+    ['総発電容量',n(p.plants_mw)+' MW'],['主力電源',fj[p.top_fuel]||p.top_fuel||'—'],['ISO',(p.iso2||'').toUpperCase()]];
+  document.getElementById('bGrid').innerHTML=rows.map(r=>'<div class="stat"><div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div></div>').join('');
+}
+document.getElementById('briefX').addEventListener('click',closeBriefing);
+addEventListener('keydown',e=>{ if(e.key==='Escape') closeBriefing(); });
+
 // ---- UI builders ----
 function layerUI(){
   const box=$('#layerList'); box.innerHTML='';
@@ -407,7 +506,7 @@ applyColor();
 
 addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); },{passive:true});
 
-function tick(){ controls.update();
+function tick(){ if(brief.active) updateBrief(); else controls.update();
   const cp=camera.position; allMats.forEach(m=> m.uniforms.uCamPos.value.copy(cp));
   renderer.render(scene,camera); requestAnimationFrame(tick); }
 tick();
@@ -431,13 +530,14 @@ function loadLayer(l){
       let built, mat;
       if(l.kind==='point'){ mat=makePointMat(colorOf(l), opMul, l.size!=null?l.size:2.4); built=buildPointLayer(gj,l,mat); }
       else if(l.kind==='column'){ mat=makeLineMat(colorOf(l), opMul); const pm=makePointMat(colorOf(l), opMul, l.tipSize!=null?l.tipSize:0.5); if(settings.white) pm.uniforms.uColor.value.copy(WHITE); allMats.push(pm); built=buildColumnLayer(gj,l,mat,pm); }
+      else if(l.kind==='flags'){ built=buildFlagLayer(gj,l); }
       else { mat=makeLineMat(colorOf(l), opMul); built=buildLineLayer(gj,l,mat); }
-      allMats.push(mat);
+      if(mat) allMats.push(mat);
       built.obj.visible = !!settings.layers[l.id];
       scene.add(built.obj);
       reg[l.id]={cfg:l, obj:built.obj, mat};
-      if(settings.white) mat.uniforms.uColor.value.copy(WHITE);
-      console.log('[chikyu-de-eta] layer', l.id, 'loaded:', built.count, l.kind==='point'?'points':'segments');
+      if(settings.white && mat) mat.uniforms.uColor.value.copy(WHITE);
+      console.log('[chikyu-de-eta] layer', l.id, 'loaded:', built.count, built.flags?'flags':(l.kind==='point'?'points':'segments'));
     })
     .catch(e=>{ console.error('[chikyu-de-eta] layer failed', l.id, e); });
 }
