@@ -42,6 +42,31 @@
       "category": "population"
     },
     {
+      "id": "water",
+      "name": "世界・水（河川・湖）",
+      "file": "data/water.geojson",
+      "kind": "line",
+      "opacityMul": 0.8,
+      "altitude": 0.003,
+      "enabled": false,
+      "credit": "河川・湖：Natural Earth（1:110m, パブリックドメイン）",
+      "category": "water"
+    },
+    {
+      "id": "energy",
+      "name": "世界・発電所（明るさ＝容量・1GW↑）",
+      "file": "data/energy.geojson",
+      "kind": "point",
+      "opacityMul": 1.2,
+      "altitude": 0.01,
+      "size": 2.6,
+      "brightnessField": "capacity_mw",
+      "brightnessMax": 3000,
+      "enabled": false,
+      "credit": "発電所：WRI Global Power Plant Database v1.3.0（CC BY 4.0）／容量1,000MW以上を抽出",
+      "category": "energy"
+    },
+    {
       "id": "admin",
       "name": "日本・行政区域（都道府県）",
       "file": "data/admin.geojson",
