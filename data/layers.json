@@ -53,6 +53,17 @@
       "category": "water"
     },
     {
+      "id": "plate",
+      "name": "世界・プレート境界",
+      "file": "data/plate.geojson",
+      "kind": "line",
+      "opacityMul": 0.95,
+      "altitude": 0.006,
+      "enabled": false,
+      "credit": "プレート境界：Peter Bird (2003) PB2002 ／ packaging: fraxen/tectonicplates",
+      "category": "plate"
+    },
+    {
       "id": "energy",
       "name": "世界・発電所（明るさ＝容量・1GW↑）",
       "file": "data/energy.geojson",
@@ -140,6 +151,7 @@
     "energy": "#d2603a",
     "forest": "#74b86a",
     "craft": "#e0a35c",
-    "population": "#c9b48c"
+    "population": "#c9b48c",
+    "plate": "#9378a8"
   }
 }

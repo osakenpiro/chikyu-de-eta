@@ -11,6 +11,7 @@
 | `crafts` | `crafts.geojson` | 伝統的工芸品 都道府県別 指定品目数（令和7年10月27日現在） | [経済産業省](https://www.meti.go.jp/press/2025/10/20251027001/20251027001-b.pdf) | 政府標準利用規約（CC BY 4.0 互換） | 「伝統的工芸品指定品目一覧（令和7年）経済産業省」 |
 | `mining` | `mining.geojson` | 鉱区データ（C22, 昭和59年=1984） | [国土交通省 国土数値情報](https://nlftp.mlit.go.jp/ksj/gmlold/datalist/gmlold_KsjTmplt-C22.html) | CC BY 4.0（国土数値情報 利用約款） | 「国土数値情報（鉱区データ C22）国土交通省」 |
 | `water` | `water.geojson` | 河川・湖 中心線（1:110m Rivers + Lakes） | [Natural Earth](https://www.naturalearthdata.com/) | パブリックドメイン | 「Made with Natural Earth」 |
+| `plate` | `plate.geojson` | プレート境界（PB2002・241本） | [Peter Bird (2003)](https://doi.org/10.1029/2001GC000252) ／ packaging: [fraxen/tectonicplates](https://github.com/fraxen/tectonicplates) | 学術データ（再配布パッケージ） | 「Plate boundaries: Peter Bird (2003), PB2002」 |
 | `energy` | `energy.geojson` | 世界の発電所（容量1,000MW以上を抽出） | [WRI Global Power Plant Database v1.3.0](https://github.com/wri/global-power-plant-database) | CC BY 4.0 | 「Global Power Plant Database v1.3.0, World Resources Institute — CC BY 4.0」 |
 | `flags` | `countries.geojson` | 主要25カ国の重心＋集計（人口/密度/発電所数・容量/主燃料）。国旗画像は flagcdn | [flagcdn.com](https://flagcdn.com/) ／ 集計は本リポ内データから算出 | flagcdn=公共・集計=各元データ準拠 | 「国旗 flagcdn.com」 |
 
@@ -22,6 +23,7 @@
 - `crafts`：都道府県重心の点。値＝指定品目数（`count`）。市区町村レベルの産地ジオコードはv1。
 - `mining`：鉱区4,902件の重心を約1km統合（4,313点・単一MultiPoint）。**昭和59年(1984)の歴史データ**。
 - `water`：Natural Earth 110m の主要河川(13)＋湖(24)を統合。属性 `name / name_ja / featurecla`。線として描画（湖は外周線）。
+- `plate`：PB2002境界241本。属性 name(例 AF-AN)/a/b、座標3桁丸め。線として描画（muted violet #9378a8）。
 - `energy`：WRI 全34,936件から容量1,000MW以上の1,618件を抽出した重心点。属性 `name / country / capacity_mw / fuel`。明るさ＝容量(bmax 3000)。**v0**（全量・容量しきい値はlayers.jsonで調整可）。
 - `flags`：G20＋25カ国。world(iso2)＋world_pop(重心/人口/密度)＋energy(国別集計) を結合。クリックで国へズーム(FOV魚眼)＋HUDブリーフィング表示。国旗は flagcdn から実行時ロード。
 - 加工は表示用であり、出典データの正確性・最新性を保証しない。
