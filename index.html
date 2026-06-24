@@ -123,6 +123,8 @@
   #brief .brk.tr{right:16px;top:16px;border-left:none;border-bottom:none}
   #brief .brk.bl{left:16px;bottom:16px;border-right:none;border-top:none}
   #brief .brk.br{right:16px;bottom:16px;border-left:none;border-top:none}
+  #panel{transition:opacity .45s ease}
+  #panel.dim{opacity:0;pointer-events:none}
 </style>
 </head>
 <body>
@@ -203,7 +205,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22j';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22k';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -443,6 +445,7 @@ function openBriefing(props,worldPos){
   brief.phase='in'; brief.t0=performance.now(); brief.active=true;
   controls.enabled=false; controls.autoRotate=false;
   if(reg['flags']) reg['flags'].obj.visible=false;
+  document.getElementById('panel').classList.add('dim');
   fillBrief(props); document.getElementById('brief').classList.add('show');
 }
 function closeBriefing(){
@@ -451,6 +454,7 @@ function closeBriefing(){
   brief.pStart.copy(camera.position); brief.pEnd.copy(brief.origin);
   brief.tStart.copy(controls.target); brief.tEnd.copy(brief.originTgt);
   brief.fStart=camera.fov; brief.fEnd=FOV0;
+  document.getElementById('panel').classList.remove('dim');
   document.getElementById('brief').classList.remove('show');
 }
 function updateBrief(){
