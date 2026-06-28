@@ -23,7 +23,7 @@
       "color": "#6f5a30",
       "opacityMul": 0.7,
       "altitude": 0.002,
-      "enabled": true,
+      "enabled": false,
       "credit": "国境：Natural Earth（1:110m, パブリックドメイン）",
       "category": "structure"
     },
@@ -37,6 +37,18 @@
       "altitude": 0.0025,
       "enabled": true,
       "credit": "海岸線（陸地）：Natural Earth（1:110m, パブリックドメイン／国境を除いた陸地の輪郭）",
+      "category": "structure"
+    },
+    {
+      "id": "land_fill",
+      "name": "世界・大陸（うすい陸地）",
+      "file": "data/land.geojson",
+      "kind": "fill",
+      "color": "#d4a853",
+      "opacityMul": 0.18,
+      "altitude": 0.0012,
+      "enabled": true,
+      "credit": "陸地ポリゴン：Natural Earth（1:110m, パブリックドメイン／うすく塗り）",
       "category": "structure"
     },
     {
