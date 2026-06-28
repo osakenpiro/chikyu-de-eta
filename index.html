@@ -123,7 +123,7 @@
   #brief .brk.tr{right:16px;top:16px;border-left:none;border-bottom:none}
   #brief .brk.bl{left:16px;bottom:16px;border-right:none;border-top:none}
   #brief .brk.br{right:16px;bottom:16px;border-left:none;border-top:none}
-  #brief .fuel{position:absolute;left:50%;bottom:74px;transform:translate(-50%,10px);width:min(560px,72vw);opacity:0;transition:opacity .5s ease,transform .5s ease}
+  #brief .fuel{position:absolute;left:50%;bottom:118px;transform:translate(-50%,10px);width:min(560px,72vw);opacity:0;transition:opacity .5s ease,transform .5s ease}
   #brief.show .fuel{opacity:1;transform:translate(-50%,0);transition-delay:.22s}
   #brief .fuel .fk{font-size:10px;color:var(--mute);letter-spacing:.12em;text-align:center;margin-bottom:6px}
   #brief .fuel .bar{display:flex;height:15px;border-radius:5px;overflow:hidden;border:1px solid var(--gold-dim);box-shadow:0 5px 22px rgba(0,0,0,.55)}
@@ -132,6 +132,14 @@
   #brief .fuel .leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
   #panel{transition:opacity .45s ease}
   #panel.dim{opacity:0;pointer-events:none}
+  #brief .lbar{position:absolute;left:50%;bottom:48px;transform:translate(-50%,8px);max-width:84vw;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;opacity:0;transition:opacity .5s ease .30s,transform .5s ease .30s;pointer-events:auto}
+  #brief.show .lbar{opacity:1;transform:translate(-50%,0)}
+  #brief .lbar .hd{width:100%;text-align:center;font-size:9.5px;color:var(--mute);letter-spacing:.18em;margin-bottom:1px}
+  #brief .lchip{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--mute);background:rgba(10,12,18,.62);border:1px solid var(--gold-dim);border-radius:20px;padding:3px 9px;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s;letter-spacing:.02em}
+  #brief .lchip .d{width:8px;height:8px;border-radius:2px;opacity:.3}
+  #brief .lchip.on{color:var(--ink);border-color:var(--gold)}
+  #brief .lchip.on .d{opacity:1}
+  #brief .lchip:hover{border-color:var(--gold);color:var(--ink)}
   #flagTip{position:fixed;z-index:32;pointer-events:none;display:none;padding:4px 9px;font-size:12px;color:var(--gold);background:rgba(10,12,18,.86);border:1px solid var(--gold-dim);border-radius:6px;letter-spacing:.04em;transform:translate(-50%,-150%);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.5)}
 </style>
 </head>
@@ -208,6 +216,7 @@
   <div class="col left" id="bLeft"></div>
   <div class="col right" id="bRight"></div>
   <div class="fuel" id="bFuel"></div>
+  <div class="lbar" id="bLayers"></div>
   <div class="foot"><span id="bFoot"></span><span class="x" id="briefX">✕ ／ Esc で地球へ戻る</span></div>
 </div>
 <div id="flagTip"></div>
@@ -215,7 +224,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24d';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24e';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -469,7 +478,7 @@ function openBriefing(props,worldPos){
   controls.enabled=false; controls.autoRotate=false;
   if(reg['flags']) reg['flags'].obj.visible=false;
   document.getElementById('panel').classList.add('dim');
-  fillBrief(props); document.getElementById('brief').classList.add('show');
+  fillBrief(props); syncLayerUI(); document.getElementById('brief').classList.add('show');
 }
 function closeBriefing(){
   if(!brief.active||brief.phase==='out') return;
@@ -528,15 +537,34 @@ document.getElementById('briefX').addEventListener('click',closeBriefing);
 addEventListener('keydown',e=>{ if(e.key==='Escape') closeBriefing(); });
 
 // ---- UI builders ----
+function shortLabel(n){ return n.replace(/^世界[・の]?/,'').replace(/^日本・?/,'').split('：').pop().split('（')[0]; }
+function toggleLayer(id,v){
+  const e=reg[id]; if(!e) return;
+  settings.layers[id]=v; e.obj.visible = v && !(brief.active && id==='flags');
+  save(); syncLayerUI(); buildChannelLegend(Object.values(reg).map(r=>r.cfg));
+}
+function syncLayerUI(){
+  document.querySelectorAll('#layerList .lrow').forEach(r=>{ const id=r.dataset.id; if(id) r.classList.toggle('on',!!settings.layers[id]); });
+  document.querySelectorAll('#bLayers .lchip').forEach(c=>{ const id=c.dataset.id; if(id) c.classList.toggle('on',!!settings.layers[id]); });
+}
 function layerUI(){
   const box=$('#layerList'); box.innerHTML='';
-  Object.values(reg).forEach(({cfg,obj})=>{
-    const on=!!settings.layers[cfg.id];
-    const row=document.createElement('div'); row.className='lrow'+(on?' on':'');
+  Object.values(reg).forEach(({cfg})=>{
+    const row=document.createElement('div'); row.className='lrow'+(settings.layers[cfg.id]?' on':''); row.dataset.id=cfg.id;
     row.innerHTML=`<span class="dot" style="color:${colorOf(cfg)}"></span><span class="sw"></span><span class="nm">${cfg.name}</span>`;
-    row.addEventListener('click',()=>{ const v=!settings.layers[cfg.id]; settings.layers[cfg.id]=v;
-      obj.visible=v; row.classList.toggle('on',v); save(); buildChannelLegend(Object.values(reg).map(r=>r.cfg)); });
+    row.addEventListener('click',()=> toggleLayer(cfg.id, !settings.layers[cfg.id]));
     box.appendChild(row);
+  });
+  briefLayerUI();
+}
+function briefLayerUI(){
+  const box=document.getElementById('bLayers'); if(!box) return; box.innerHTML='<div class="hd">レイヤー切替</div>';
+  Object.values(reg).forEach(({cfg})=>{
+    if(cfg.kind==='flags') return;
+    const c=document.createElement('span'); c.className='lchip'+(settings.layers[cfg.id]?' on':''); c.dataset.id=cfg.id;
+    c.innerHTML=`<span class="d" style="background:${colorOf(cfg)}"></span>${shortLabel(cfg.name)}`;
+    c.addEventListener('click',()=> toggleLayer(cfg.id, !settings.layers[cfg.id]));
+    box.appendChild(c);
   });
 }
 function credits(){
