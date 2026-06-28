@@ -215,7 +215,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24c';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24d';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -299,7 +299,7 @@ function makePointMat(color, opMul, size){
 }
 
 // ---- palette / pictogram / channel (legend grammar v0.4) ----
-const PALDEF={structure:'#d4a853',water:'#5b9bd5',mineral:'#d9a441',energy:'#d2603a',forest:'#74b86a',craft:'#e0a35c',population:'#c9b48c',plate:'#9378a8'};
+const PALDEF={structure:'#d4a853',water:'#5b9bd5',mineral:'#d9a441',energy:'#d2603a',forest:'#74b86a',craft:'#e0a35c',population:'#c9b48c',plate:'#9378a8',plate_conv:'#cf5b4e',plate_div:'#57a89a',plate_trans:'#9b86b5'};
 let PAL={};
 function colorOf(L){ return L.color || PAL[L.category] || PALDEF[L.category] || '#d4a853'; }
 function channelOf(L){ if(L.kind==='flags')return 'flag'; if(L.kind==='line')return 'line'; if(L.kind==='column')return 'height'; if(L.kind==='point'&&L.brightnessField)return 'brightness'; if(L.kind==='point')return 'point'; return null; }
@@ -315,7 +315,7 @@ function makePictoCanvas(kind,hex){
 }
 const _ptex={};
 function pictoTexture(kind,hex){ const key=kind+hex; if(_ptex[key]) return _ptex[key]; const t=new THREE.CanvasTexture(makePictoCanvas(kind,hex)); t.needsUpdate=true; _ptex[key]=t; return t; }
-const CATLABEL={structure:'骨格・境界',water:'水',mineral:'鉱',energy:'エネルギー',forest:'森・植生',craft:'工芸・文化',population:'人口',plate:'プレート境界'};
+const CATLABEL={structure:'骨格・境界',water:'水',mineral:'鉱',energy:'エネルギー',forest:'森・植生',craft:'工芸・文化',population:'人口',plate:'プレート境界',plate_conv:'沈み込み（収束）',plate_div:'海嶺（発散）',plate_trans:'トランスフォーム'};
 const SHAPEDEF={line:['━','線','境界'],point:['●','点','分布'],brightness:['◍','明るさ','割合'],height:['▮','高さ','量（＋先端）'],flag:['⚑','国旗','クリックで国へ']};
 function buildChannelLegend(defs){
   const el=document.getElementById('legendCh'); if(!el) return;
@@ -454,6 +454,7 @@ const brief={active:false,phase:'in',t0:0,durIn:1.15,durOut:0.85,
 function _ease(x){ return x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
 function openBriefing(props,worldPos){
   if(brief.active) return;
+  { const _t=document.getElementById('flagTip'); if(_t){ _t.style.display='none'; } }
   brief.origin.copy(camera.position); brief.originTgt.copy(controls.target);
   const n=worldPos.clone().normalize(); brief.axis.copy(n);
   let ref=new THREE.Vector3(0,1,0); if(Math.abs(n.dot(ref))>0.9) ref.set(0,0,1);
