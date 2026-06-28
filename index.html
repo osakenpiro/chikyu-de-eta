@@ -224,7 +224,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24f';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24g';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -459,8 +459,24 @@ const ORBIT_SPEED=0.075; // rad/s 注目国まわりのゆっくり周回(約84�
 const brief={active:false,phase:'in',t0:0,durIn:1.15,durOut:0.85,
   pStart:new THREE.Vector3(),pEnd:new THREE.Vector3(),tStart:new THREE.Vector3(),tEnd:new THREE.Vector3(),
   fStart:45,fEnd:80,origin:new THREE.Vector3(),originTgt:new THREE.Vector3(),
-  axis:new THREE.Vector3(),offset0:new THREE.Vector3(),offset:new THREE.Vector3(),orbitT0:0};
+  axis:new THREE.Vector3(),offset0:new THREE.Vector3(),offset:new THREE.Vector3(),orbitT0:0,outline:null};
 function _ease(x){ return x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
+let worldGJ=null;
+function buildCountryOutline(name,iso){
+  if(!worldGJ) return null;
+  const ISO=(iso||'').toUpperCase();
+  let feat=worldGJ.features.find(f=>f.properties.name===name) || worldGJ.features.find(f=>(f.properties.iso||'')===ISO);
+  if(!feat||!feat.geometry) return null;
+  const pos=[], alt=0.018;
+  const ring=r=>{ for(let i=0;i<r.length-1;i++){ const a=toXYZ(r[i][1],r[i][0],alt), b=toXYZ(r[i+1][1],r[i+1][0],alt); pos.push(a[0],a[1],a[2],b[0],b[1],b[2]); } };
+  const g=feat.geometry;
+  if(g.type==='Polygon') g.coordinates.forEach(ring);
+  else if(g.type==='MultiPolygon') g.coordinates.forEach(p=>p.forEach(ring));
+  if(!pos.length) return null;
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));
+  const mat=new THREE.LineBasicMaterial({color:0xffd766,transparent:true,opacity:0,depthTest:false,depthWrite:false});
+  const ls=new THREE.LineSegments(geo,mat); ls.renderOrder=9; return ls;
+}
 function openBriefing(props,worldPos){
   if(brief.active) return;
   { const _t=document.getElementById('flagTip'); if(_t){ _t.style.display='none'; } }
@@ -477,6 +493,8 @@ function openBriefing(props,worldPos){
   brief.phase='in'; brief.t0=performance.now(); brief.active=true;
   controls.enabled=false; controls.autoRotate=false;
   if(reg['flags']) reg['flags'].obj.visible=false;
+  if(brief.outline){ scene.remove(brief.outline); brief.outline.geometry.dispose(); brief.outline.material.dispose(); brief.outline=null; }
+  brief.outline=buildCountryOutline(props.name, props.iso2); if(brief.outline) scene.add(brief.outline);
   document.getElementById('panel').classList.add('dim');
   fillBrief(props); syncLayerUI(); document.getElementById('brief').classList.add('show');
 }
@@ -494,6 +512,7 @@ function updateBrief(){
     const ang=(performance.now()-brief.orbitT0)/1000*ORBIT_SPEED;
     brief.offset.copy(brief.offset0).applyAxisAngle(brief.axis,ang);
     camera.position.copy(brief.tEnd).add(brief.offset); camera.lookAt(brief.tEnd);
+    if(brief.outline) brief.outline.material.opacity=0.92;
     return;
   }
   const dur=(brief.phase==='in'?brief.durIn:brief.durOut)*1000;
@@ -501,9 +520,10 @@ function updateBrief(){
   camera.position.lerpVectors(brief.pStart,brief.pEnd,e);
   camera.fov=brief.fStart+(brief.fEnd-brief.fStart)*e; camera.updateProjectionMatrix();
   controls.target.lerpVectors(brief.tStart,brief.tEnd,e); camera.lookAt(controls.target);
+  if(brief.outline) brief.outline.material.opacity=(brief.phase==='in'?e:1-e)*0.92;
   if(k>=1){
     if(brief.phase==='in'){ brief.phase='orbit'; brief.orbitT0=performance.now(); brief.offset0.copy(brief.pEnd).sub(brief.tEnd); }
-    else if(brief.phase==='out'){ brief.active=false; controls.target.copy(brief.originTgt); controls.enabled=true; controls.autoRotate=settings.rotate; if(reg['flags']) reg['flags'].obj.visible=!!settings.layers['flags']; }
+    else if(brief.phase==='out'){ brief.active=false; controls.target.copy(brief.originTgt); controls.enabled=true; controls.autoRotate=settings.rotate; if(reg['flags']) reg['flags'].obj.visible=!!settings.layers['flags']; if(brief.outline){ scene.remove(brief.outline); brief.outline.geometry.dispose(); brief.outline.material.dispose(); brief.outline=null; } }
   }
 }
 function fillBrief(p){
@@ -626,6 +646,7 @@ function loadLayer(l){
   if(settings.layers[l.id]===undefined) settings.layers[l.id] = l.enabled!==false;
   return fetch(l.file+(l.file.indexOf('?')<0?'?':'&')+'b='+BUILD).then(r=>{ if(!r.ok) throw new Error(l.id+' '+r.status); return r.json(); })
     .then(gj=>{
+      if(l.id==='world') worldGJ=gj;
       const opMul=l.opacityMul!=null?l.opacityMul:1;
       let built, mat;
       if(l.kind==='point'){ mat=makePointMat(colorOf(l), opMul, l.size!=null?l.size:2.4); built=buildPointLayer(gj,l,mat); }
