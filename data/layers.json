@@ -79,12 +79,12 @@
     },
     {
       "id": "flags",
-      "name": "世界・国旗（クリックで国へ）",
+      "name": "世界・国旗（全175カ国／クリックで国へ）",
       "file": "data/countries.geojson",
       "kind": "flags",
       "enabled": false,
       "altitude": 0.03,
-      "credit": "国旗：flagcdn.com（主要25カ国・クリックで国別ブリーフィング）",
+      "credit": "国旗：flagcdn.com（全175カ国・クリックで国別ブリーフィング）",
       "category": "structure"
     },
     {
