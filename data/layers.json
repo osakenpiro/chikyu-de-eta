@@ -113,6 +113,16 @@
       "category": "structure"
     },
     {
+      "id": "labels",
+      "name": "世界・国名（ラベル）",
+      "file": "data/countries.geojson",
+      "kind": "labels",
+      "altitude": 0.05,
+      "enabled": true,
+      "credit": "国名表記：Natural Earth ADMIN／name_ja＝日本語慣用名（長い正式名は短縮表示）",
+      "category": "structure"
+    },
+    {
       "id": "admin",
       "name": "日本・行政区域（都道府県）",
       "file": "data/admin.geojson",
