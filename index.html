@@ -123,6 +123,13 @@
   #brief .brk.tr{right:16px;top:16px;border-left:none;border-bottom:none}
   #brief .brk.bl{left:16px;bottom:16px;border-right:none;border-top:none}
   #brief .brk.br{right:16px;bottom:16px;border-left:none;border-top:none}
+  #brief .fuel{position:absolute;left:50%;bottom:74px;transform:translate(-50%,10px);width:min(560px,72vw);opacity:0;transition:opacity .5s ease,transform .5s ease}
+  #brief.show .fuel{opacity:1;transform:translate(-50%,0);transition-delay:.22s}
+  #brief .fuel .fk{font-size:10px;color:var(--mute);letter-spacing:.12em;text-align:center;margin-bottom:6px}
+  #brief .fuel .bar{display:flex;height:15px;border-radius:5px;overflow:hidden;border:1px solid var(--gold-dim);box-shadow:0 5px 22px rgba(0,0,0,.55)}
+  #brief .fuel .bar span{height:100%}
+  #brief .fuel .leg{display:flex;flex-wrap:wrap;justify-content:center;gap:3px 13px;margin-top:8px;font-size:10.5px;color:var(--ink)}
+  #brief .fuel .leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
   #panel{transition:opacity .45s ease}
   #panel.dim{opacity:0;pointer-events:none}
 </style>
@@ -199,13 +206,14 @@
   <div class="bw hdr"><img class="flag" id="bFlag" alt=""/><div><div class="ttl" id="bName"></div><div class="sub">COUNTRY BRIEFING</div></div></div>
   <div class="col left" id="bLeft"></div>
   <div class="col right" id="bRight"></div>
+  <div class="fuel" id="bFuel"></div>
   <div class="foot"><span id="bFoot"></span><span class="x" id="briefX">✕ ／ Esc で地球へ戻る</span></div>
 </div>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24a';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24b';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -480,12 +488,28 @@ function fillBrief(p){
   const iso=(p.iso2||'').toLowerCase();
   document.getElementById('bFlag').src='https://flagcdn.com/w160/'+iso+'.png';
   document.getElementById('bName').textContent=(p.name_ja||p.name);
-  const fj={Coal:'石炭',Gas:'天然ガス',Hydro:'水力',Nuclear:'原子力',Oil:'石油',Solar:'太陽光',Wind:'風力'};
+  const fj={Coal:'石炭',Gas:'天然ガス',Hydro:'水力',Nuclear:'原子力',Oil:'石油',Solar:'太陽光',Wind:'風力',Cogeneration:'コージェネ'};
+  const FCOL={Coal:'#6b6f76',Gas:'#d2603a',Hydro:'#5b9bd5',Nuclear:'#d4a853',Oil:'#8a6d3b',Solar:'#e8c54d',Wind:'#74b86a',Cogeneration:'#b08bbf'};
   const nf=x=>Number(x).toLocaleString('en-US');
-  const cell=(k,v)=>'<div class="bw"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';
-  document.getElementById('bLeft').innerHTML=cell('人口',nf(p.pop)+' 人')+cell('人口密度',p.density+' /km²');
+  const cell=(k,v,sub)=>'<div class="bw"><div class="k">'+k+'</div><div class="v">'+v+'</div>'+(sub?'<div class="k" style="margin-top:3px">'+sub+'</div>':'')+'</div>';
+  let L='';
+  if(p.capital_ja||p.capital) L+=cell('首都',p.capital_ja||p.capital);
+  L+=cell('人口',nf(p.pop)+' 人', p.pop_rank?('世界 '+p.pop_rank+'位 ／ 177ヶ国'):'');
+  L+=cell('人口密度',p.density+' /km²');
+  if(p.area_km2!=null) L+=cell('面積',nf(p.area_km2)+' km²');
+  if(p.forest_pct!=null) L+=cell('森林率',p.forest_pct+' %');
+  if(p.river_ja) L+=cell('最寄りの大河川',p.river_ja,'約 '+nf(p.river_km)+' km');
+  document.getElementById('bLeft').innerHTML=L;
   document.getElementById('bRight').innerHTML=cell('発電所 1GW↑',nf(p.plants_n)+' 基')+cell('総発電容量',nf(p.plants_mw)+' MW')+cell('主力電源',fj[p.top_fuel]||p.top_fuel||'—');
-  document.getElementById('bFoot').textContent='ISO '+(p.iso2||'').toUpperCase()+'  ／  主要国ブリーフィング';
+  const fb=document.getElementById('bFuel'), mx=p.fuel_mix||[];
+  if(mx.length){
+    fb.innerHTML='<div class="fk">主要発電所の燃料構成（容量比）</div><div class="bar">'+
+      mx.map(function(a){return '<span style="width:'+a[1]+'%;background:'+(FCOL[a[0]]||'#888')+'"></span>';}).join('')+
+      '</div><div class="leg">'+
+      mx.map(function(a){return '<span><i style="background:'+(FCOL[a[0]]||'#888')+'"></i>'+(fj[a[0]]||a[0])+' '+a[1]+'%</span>';}).join('')+'</div>';
+    fb.style.display='block';
+  } else { fb.style.display='none'; }
+  document.getElementById('bFoot').textContent='ISO '+(p.iso2||'').toUpperCase()+'  ／  国別ブリーフィング';
 }
 document.getElementById('briefX').addEventListener('click',closeBriefing);
 addEventListener('keydown',e=>{ if(e.key==='Escape') closeBriefing(); });
