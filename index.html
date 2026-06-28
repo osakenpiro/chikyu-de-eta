@@ -94,6 +94,19 @@
     #panel{width:212px;font-size:11.5px}
     #brand .t{font-size:13px}
     #foot{max-width:54vw}
+    /* briefing: stop the two 208px columns from overlapping on phones */
+    #brief .hdr{left:14px;top:16px;gap:9px}
+    #brief .hdr .flag{width:40px;height:27px}
+    #brief .hdr .ttl{font-size:15px}
+    #brief .hdr .sub{font-size:8.5px;letter-spacing:.18em}
+    #brief .col{width:40vw;top:92px;gap:7px}
+    #brief .col.left{left:12px}
+    #brief .col.right{right:12px}
+    #brief .bw{padding:6px 9px}
+    #brief .bw .v{font-size:13.5px}
+    #brief .bw .k{font-size:9px;letter-spacing:.08em}
+    #brief .brk{width:18px;height:18px}
+    #brief .fuel{bottom:104px;width:88vw}
   }
     /* country briefing HUD (dashboard) */
   #brief{position:fixed;inset:0;z-index:30;display:none;pointer-events:none;font-variant-numeric:tabular-nums}
@@ -224,7 +237,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24i';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-28a';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -474,7 +487,7 @@ function buildCountryOutline(name,iso){
   else if(g.type==='MultiPolygon') g.coordinates.forEach(p=>p.forEach(ring));
   if(!pos.length) return null;
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));
-  const mat=new THREE.LineBasicMaterial({color:0xffd766,transparent:true,opacity:0,depthTest:false,depthWrite:false});
+  const mat=new THREE.LineBasicMaterial({color:0xffd766,transparent:true,opacity:0,depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending});
   const ls=new THREE.LineSegments(geo,mat); ls.renderOrder=9; return ls;
 }
 function openBriefing(props,worldPos){
@@ -512,7 +525,7 @@ function updateBrief(){
     const ang=(performance.now()-brief.orbitT0)/1000*ORBIT_SPEED;
     brief.offset.copy(brief.offset0).applyAxisAngle(brief.axis,ang);
     camera.position.copy(brief.tEnd).add(brief.offset); camera.lookAt(brief.tEnd);
-    if(brief.outline) brief.outline.material.opacity=0.92;
+    if(brief.outline) brief.outline.material.opacity=0.66+0.26*Math.sin((performance.now()-brief.orbitT0)*0.0022);
     return;
   }
   const dur=(brief.phase==='in'?brief.durIn:brief.durOut)*1000;
