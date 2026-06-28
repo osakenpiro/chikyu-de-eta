@@ -28,6 +28,18 @@
       "category": "structure"
     },
     {
+      "id": "land",
+      "name": "世界・大陸（陸地の輪郭）",
+      "file": "data/land.geojson",
+      "kind": "line",
+      "color": "#d4a853",
+      "opacityMul": 0.9,
+      "altitude": 0.0025,
+      "enabled": true,
+      "credit": "海岸線（陸地）：Natural Earth（1:110m, パブリックドメイン／国境を除いた陸地の輪郭）",
+      "category": "structure"
+    },
+    {
       "id": "world_pop",
       "name": "世界・人口密度（明るさ）",
       "file": "data/world_pop.geojson",
