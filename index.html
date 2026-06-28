@@ -237,7 +237,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-28a';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-28b';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -448,6 +448,36 @@ function buildFlagLayer(gj, cfg){
   });
   return {obj:grp, count:flagSprites.length, flags:true};
 }
+// ---- country name labels (role-separated overview layer) ----
+const labelSprites=[];
+const LBL_SHORT={'中華人民共和国':'中国','アメリカ合衆国':'アメリカ','大韓民国':'韓国','朝鮮民主主義人民共和国':'北朝鮮','コンゴ民主共和国':'コンゴ','南アフリカ共和国':'南アフリカ','タイ王国':'タイ','ドミニカ共和国':'ドミニカ','アラブ首長国連邦':'UAE','中央アフリカ共和国':'中央アフリカ','ボスニア・ヘルツェゴビナ':'ボスニア','フランス領南方・南極地域':'仏領南方'};
+function labelTexture(text){
+  const fs=46, padX=10, padY=6, dpr=Math.min(devicePixelRatio||1,2);
+  const FONT='600 '+fs+'px "Yu Gothic","Hiragino Sans","Noto Sans JP",system-ui,sans-serif';
+  const mc=document.createElement('canvas').getContext('2d'); mc.font=FONT;
+  const w=Math.ceil(mc.measureText(text).width)+padX*2, h=fs+padY*2;
+  const cv=document.createElement('canvas'); cv.width=Math.ceil(w*dpr); cv.height=Math.ceil(h*dpr);
+  const x=cv.getContext('2d'); x.scale(dpr,dpr); x.font=FONT; x.textAlign='center'; x.textBaseline='middle';
+  x.lineJoin='round'; x.lineWidth=5; x.strokeStyle='rgba(5,7,11,0.92)'; x.strokeText(text,w/2,h/2);
+  x.fillStyle='#eccd82'; x.fillText(text,w/2,h/2);
+  const t=new THREE.CanvasTexture(cv); t.minFilter=THREE.LinearFilter; t.generateMipmaps=false; t.needsUpdate=true;
+  return {tex:t, aspect:w/h};
+}
+function buildLabelLayer(gj, cfg){
+  const grp=new THREE.Group(); const alt=cfg.altitude!=null?cfg.altitude:0.05;
+  (gj.features||[]).forEach(f=>{
+    const c=f.geometry&&f.geometry.coordinates, p=f.properties||{};
+    const name=LBL_SHORT[p.name_ja]||p.name_ja||p.name; if(!c||!name) return;
+    const pos=toXYZ(c[1],c[0],alt);
+    const lt=labelTexture(name);
+    const mat=new THREE.SpriteMaterial({map:lt.tex,transparent:true,depthTest:false,depthWrite:false,opacity:0});
+    const sp=new THREE.Sprite(mat); const hh=R*0.032; sp.scale.set(hh*lt.aspect,hh,1);
+    sp.position.set(pos[0],pos[1],pos[2]); sp.renderOrder=10;
+    sp._n=sp.position.clone().normalize(); sp._rank=p.pop_rank||999;
+    grp.add(sp); labelSprites.push(sp);
+  });
+  return {obj:grp, count:labelSprites.length, labels:true};
+}
 const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2(); let _down=null;
 renderer.domElement.addEventListener('pointerdown',e=>{ _down=[e.clientX,e.clientY]; });
 renderer.domElement.addEventListener('pointerup',e=>{
@@ -506,6 +536,7 @@ function openBriefing(props,worldPos){
   brief.phase='in'; brief.t0=performance.now(); brief.active=true;
   controls.enabled=false; controls.autoRotate=false;
   if(reg['flags']) reg['flags'].obj.visible=false;
+  if(reg['labels']) reg['labels'].obj.visible=false;
   if(brief.outline){ scene.remove(brief.outline); brief.outline.geometry.dispose(); brief.outline.material.dispose(); brief.outline=null; }
   brief.outline=buildCountryOutline(props.name, props.iso2); if(brief.outline) scene.add(brief.outline);
   document.getElementById('panel').classList.add('dim');
@@ -536,7 +567,7 @@ function updateBrief(){
   if(brief.outline) brief.outline.material.opacity=(brief.phase==='in'?e:1-e)*0.92;
   if(k>=1){
     if(brief.phase==='in'){ brief.phase='orbit'; brief.orbitT0=performance.now(); brief.offset0.copy(brief.pEnd).sub(brief.tEnd); }
-    else if(brief.phase==='out'){ brief.active=false; controls.target.copy(brief.originTgt); controls.enabled=true; controls.autoRotate=settings.rotate; if(reg['flags']) reg['flags'].obj.visible=!!settings.layers['flags']; if(brief.outline){ scene.remove(brief.outline); brief.outline.geometry.dispose(); brief.outline.material.dispose(); brief.outline=null; } }
+    else if(brief.phase==='out'){ brief.active=false; controls.target.copy(brief.originTgt); controls.enabled=true; controls.autoRotate=settings.rotate; if(reg['flags']) reg['flags'].obj.visible=!!settings.layers['flags']; if(reg['labels']) reg['labels'].obj.visible=!!settings.layers['labels']; if(brief.outline){ scene.remove(brief.outline); brief.outline.geometry.dispose(); brief.outline.material.dispose(); brief.outline=null; } }
   }
 }
 function fillBrief(p){
@@ -573,7 +604,7 @@ addEventListener('keydown',e=>{ if(e.key==='Escape') closeBriefing(); });
 function shortLabel(n){ return n.replace(/^世界[・の]?/,'').replace(/^日本・?/,'').split('：').pop().split('（')[0]; }
 function toggleLayer(id,v){
   const e=reg[id]; if(!e) return;
-  settings.layers[id]=v; e.obj.visible = v && !(brief.active && id==='flags');
+  settings.layers[id]=v; e.obj.visible = v && !(brief.active && (id==='flags'||id==='labels'));
   save(); syncLayerUI(); buildChannelLegend(Object.values(reg).map(r=>r.cfg));
 }
 function syncLayerUI(){
@@ -593,7 +624,7 @@ function layerUI(){
 function briefLayerUI(){
   const box=document.getElementById('bLayers'); if(!box) return; box.innerHTML='<div class="hd">レイヤー切替</div>';
   Object.values(reg).forEach(({cfg})=>{
-    if(cfg.kind==='flags') return;
+    if(cfg.kind==='flags'||cfg.kind==='labels') return;
     const c=document.createElement('span'); c.className='lchip'+(settings.layers[cfg.id]?' on':''); c.dataset.id=cfg.id;
     c.innerHTML=`<span class="d" style="background:${colorOf(cfg)}"></span>${shortLabel(cfg.name)}`;
     c.addEventListener('click',()=> toggleLayer(cfg.id, !settings.layers[cfg.id]));
@@ -641,6 +672,17 @@ function tick(){ if(brief.active) updateBrief(); else controls.update();
     _camN.copy(cp).normalize();
     for(let i=0;i<flagSprites.length;i++){ const s=flagSprites[i]; s.visible = s._n.dot(_camN) > 0.18; }
   }
+  if(!brief.active && reg['labels'] && reg['labels'].obj.visible && labelSprites.length){
+    _camN.copy(cp).normalize();
+    const dist=cp.length(), tt=Math.min(1,Math.max(0,(dist-135)/(400-135)));
+    const cap=Math.round(60+(7-60)*tt);
+    for(let i=0;i<labelSprites.length;i++){ const s=labelSprites[i];
+      const fa=s._n.dot(_camN);
+      if(fa<=0.33 || s._rank>cap){ s.visible=false; continue; }
+      s.visible=true; const a=Math.min(1,Math.max(0,(fa-0.33)/(0.62-0.33)));
+      s.material.opacity=a*a*(3-2*a)*0.85;
+    }
+  }
   renderer.render(scene,camera); requestAnimationFrame(tick); }
 tick();
 
@@ -665,6 +707,7 @@ function loadLayer(l){
       if(l.kind==='point'){ mat=makePointMat(colorOf(l), opMul, l.size!=null?l.size:2.4); built=buildPointLayer(gj,l,mat); }
       else if(l.kind==='column'){ mat=makeLineMat(colorOf(l), opMul); const pm=makePointMat(colorOf(l), opMul, l.tipSize!=null?l.tipSize:0.5); if(settings.white) pm.uniforms.uColor.value.copy(WHITE); allMats.push(pm); built=buildColumnLayer(gj,l,mat,pm); }
       else if(l.kind==='flags'){ built=buildFlagLayer(gj,l); }
+      else if(l.kind==='labels'){ built=buildLabelLayer(gj,l); }
       else { mat=makeLineMat(colorOf(l), opMul); built=buildLineLayer(gj,l,mat); }
       if(mat) allMats.push(mat);
       built.obj.visible = !!settings.layers[l.id];
