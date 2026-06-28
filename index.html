@@ -237,7 +237,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-28b';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-28c';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -471,13 +471,14 @@ function buildLabelLayer(gj, cfg){
     const pos=toXYZ(c[1],c[0],alt);
     const lt=labelTexture(name);
     const mat=new THREE.SpriteMaterial({map:lt.tex,transparent:true,depthTest:false,depthWrite:false,opacity:0});
-    const sp=new THREE.Sprite(mat); const hh=R*0.032; sp.scale.set(hh*lt.aspect,hh,1);
+    const sp=new THREE.Sprite(mat); const hh=R*0.032; sp.scale.set(hh*lt.aspect,hh,1); sp.center.set(0.5, settings.layers['flags']?-1.0:0.5);
     sp.position.set(pos[0],pos[1],pos[2]); sp.renderOrder=10;
     sp._n=sp.position.clone().normalize(); sp._rank=p.pop_rank||999;
     grp.add(sp); labelSprites.push(sp);
   });
   return {obj:grp, count:labelSprites.length, labels:true};
 }
+function applyLabelOffset(){ const cy=settings.layers['flags']?-1.0:0.5; for(let i=0;i<labelSprites.length;i++) labelSprites[i].center.set(0.5,cy); }
 const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2(); let _down=null;
 renderer.domElement.addEventListener('pointerdown',e=>{ _down=[e.clientX,e.clientY]; });
 renderer.domElement.addEventListener('pointerup',e=>{
@@ -605,6 +606,7 @@ function shortLabel(n){ return n.replace(/^世界[・の]?/,'').replace(/^日本
 function toggleLayer(id,v){
   const e=reg[id]; if(!e) return;
   settings.layers[id]=v; e.obj.visible = v && !(brief.active && (id==='flags'||id==='labels'));
+  if(id==='flags'||id==='labels') applyLabelOffset();
   save(); syncLayerUI(); buildChannelLegend(Object.values(reg).map(r=>r.cfg));
 }
 function syncLayerUI(){
