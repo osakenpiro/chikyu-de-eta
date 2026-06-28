@@ -132,6 +132,7 @@
   #brief .fuel .leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
   #panel{transition:opacity .45s ease}
   #panel.dim{opacity:0;pointer-events:none}
+  #flagTip{position:fixed;z-index:32;pointer-events:none;display:none;padding:4px 9px;font-size:12px;color:var(--gold);background:rgba(10,12,18,.86);border:1px solid var(--gold-dim);border-radius:6px;letter-spacing:.04em;transform:translate(-50%,-150%);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.5)}
 </style>
 </head>
 <body>
@@ -209,11 +210,12 @@
   <div class="fuel" id="bFuel"></div>
   <div class="foot"><span id="bFoot"></span><span class="x" id="briefX">✕ ／ Esc で地球へ戻る</span></div>
 </div>
+<div id="flagTip"></div>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24b';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24c';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -417,8 +419,9 @@ function buildFlagLayer(gj, cfg){
     const pos=toXYZ(c[1],c[0],alt);
     const tex=_texLoader.load('https://flagcdn.com/w80/'+iso+'.png');
     const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false});
-    const sp=new THREE.Sprite(mat); const sz=R*0.06; sp.scale.set(sz*1.5,sz,1);
+    const sp=new THREE.Sprite(mat); const sz=R*0.05; sp.scale.set(sz*1.5,sz,1);
     sp.position.set(pos[0],pos[1],pos[2]); sp.userData=f.properties; sp.renderOrder=8;
+    sp._n=sp.position.clone().normalize();
     grp.add(sp); flagSprites.push(sp);
   });
   return {obj:grp, count:flagSprites.length, flags:true};
@@ -432,6 +435,15 @@ renderer.domElement.addEventListener('pointerup',e=>{
   _ray.setFromCamera(_ndc,camera);
   const hit=_ray.intersectObjects(flagSprites,false)[0];
   if(hit) openBriefing(hit.object.userData, hit.object.position.clone());
+});
+renderer.domElement.addEventListener('pointermove',e=>{
+  const tip=document.getElementById('flagTip');
+  if(brief.active || !settings.layers['flags'] || !flagSprites.length){ tip.style.display='none'; return; }
+  _ndc.x=(e.clientX/innerWidth)*2-1; _ndc.y=-(e.clientY/innerHeight)*2+1;
+  _ray.setFromCamera(_ndc,camera);
+  const hit=_ray.intersectObjects(flagSprites,false)[0];
+  if(hit){ const p=hit.object.userData; tip.textContent=(p.name_ja||p.name||''); tip.style.left=e.clientX+'px'; tip.style.top=e.clientY+'px'; tip.style.display='block'; renderer.domElement.style.cursor='pointer'; }
+  else { tip.style.display='none'; renderer.domElement.style.cursor=''; }
 });
 const FOV0=camera.fov;
 const ORBIT_SPEED=0.075; // rad/s 注目国まわりのゆっくり周回(約84秒/周)
@@ -560,8 +572,13 @@ applyColor();
 
 addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); },{passive:true});
 
+const _camN=new THREE.Vector3();
 function tick(){ if(brief.active) updateBrief(); else controls.update();
   const cp=camera.position; allMats.forEach(m=> m.uniforms.uCamPos.value.copy(cp));
+  if(!brief.active && reg['flags'] && reg['flags'].obj.visible && flagSprites.length){
+    _camN.copy(cp).normalize();
+    for(let i=0;i<flagSprites.length;i++){ const s=flagSprites[i]; s.visible = s._n.dot(_camN) > 0.18; }
+  }
   renderer.render(scene,camera); requestAnimationFrame(tick); }
 tick();
 
