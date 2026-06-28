@@ -205,7 +205,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-22l';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-24a';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -426,14 +426,16 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(hit) openBriefing(hit.object.userData, hit.object.position.clone());
 });
 const FOV0=camera.fov;
+const ORBIT_SPEED=0.075; // rad/s 注目国まわりのゆっくり周回(約84秒/周)
 const brief={active:false,phase:'in',t0:0,durIn:1.15,durOut:0.85,
   pStart:new THREE.Vector3(),pEnd:new THREE.Vector3(),tStart:new THREE.Vector3(),tEnd:new THREE.Vector3(),
-  fStart:45,fEnd:80,origin:new THREE.Vector3(),originTgt:new THREE.Vector3()};
+  fStart:45,fEnd:80,origin:new THREE.Vector3(),originTgt:new THREE.Vector3(),
+  axis:new THREE.Vector3(),offset0:new THREE.Vector3(),offset:new THREE.Vector3(),orbitT0:0};
 function _ease(x){ return x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
 function openBriefing(props,worldPos){
   if(brief.active) return;
   brief.origin.copy(camera.position); brief.originTgt.copy(controls.target);
-  const n=worldPos.clone().normalize();
+  const n=worldPos.clone().normalize(); brief.axis.copy(n);
   let ref=new THREE.Vector3(0,1,0); if(Math.abs(n.dot(ref))>0.9) ref.set(0,0,1);
   const east=new THREE.Vector3().crossVectors(ref,n).normalize();
   const north=new THREE.Vector3().crossVectors(n,east).normalize();
@@ -458,12 +460,21 @@ function closeBriefing(){
   document.getElementById('brief').classList.remove('show');
 }
 function updateBrief(){
+  if(brief.phase==='orbit'){
+    const ang=(performance.now()-brief.orbitT0)/1000*ORBIT_SPEED;
+    brief.offset.copy(brief.offset0).applyAxisAngle(brief.axis,ang);
+    camera.position.copy(brief.tEnd).add(brief.offset); camera.lookAt(brief.tEnd);
+    return;
+  }
   const dur=(brief.phase==='in'?brief.durIn:brief.durOut)*1000;
   let k=(performance.now()-brief.t0)/dur; if(k>1)k=1; const e=_ease(k);
   camera.position.lerpVectors(brief.pStart,brief.pEnd,e);
   camera.fov=brief.fStart+(brief.fEnd-brief.fStart)*e; camera.updateProjectionMatrix();
   controls.target.lerpVectors(brief.tStart,brief.tEnd,e); camera.lookAt(controls.target);
-  if(k>=1 && brief.phase==='out'){ brief.active=false; controls.target.copy(brief.originTgt); controls.enabled=true; controls.autoRotate=settings.rotate; if(reg['flags']) reg['flags'].obj.visible=!!settings.layers['flags']; }
+  if(k>=1){
+    if(brief.phase==='in'){ brief.phase='orbit'; brief.orbitT0=performance.now(); brief.offset0.copy(brief.pEnd).sub(brief.tEnd); }
+    else if(brief.phase==='out'){ brief.active=false; controls.target.copy(brief.originTgt); controls.enabled=true; controls.autoRotate=settings.rotate; if(reg['flags']) reg['flags'].obj.visible=!!settings.layers['flags']; }
+  }
 }
 function fillBrief(p){
   const iso=(p.iso2||'').toLowerCase();
