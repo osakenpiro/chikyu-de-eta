@@ -53,15 +53,40 @@
       "category": "water"
     },
     {
-      "id": "plate",
-      "name": "世界・プレート境界",
-      "file": "data/plate.geojson",
+      "id": "plate_conv",
+      "name": "世界・プレート境界：沈み込み（収束）",
+      "file": "data/plate_conv.geojson",
+      "color": "#cf5b4e",
+      "category": "plate_conv",
       "kind": "line",
       "opacityMul": 0.95,
       "altitude": 0.006,
       "enabled": false,
-      "credit": "プレート境界：Peter Bird (2003) PB2002 ／ packaging: fraxen/tectonicplates",
-      "category": "plate"
+      "credit": "プレート境界：Peter Bird (2003) PB2002 ／ packaging: fraxen/tectonicplates"
+    },
+    {
+      "id": "plate_div",
+      "name": "世界・プレート境界：海嶺（発散）",
+      "file": "data/plate_div.geojson",
+      "color": "#57a89a",
+      "category": "plate_div",
+      "kind": "line",
+      "opacityMul": 0.95,
+      "altitude": 0.006,
+      "enabled": false,
+      "credit": "プレート境界：Peter Bird (2003) PB2002 ／ packaging: fraxen/tectonicplates"
+    },
+    {
+      "id": "plate_trans",
+      "name": "世界・プレート境界：トランスフォーム",
+      "file": "data/plate_trans.geojson",
+      "color": "#9b86b5",
+      "category": "plate_trans",
+      "kind": "line",
+      "opacityMul": 0.95,
+      "altitude": 0.006,
+      "enabled": false,
+      "credit": "プレート境界：Peter Bird (2003) PB2002 ／ packaging: fraxen/tectonicplates"
     },
     {
       "id": "energy",
@@ -152,6 +177,9 @@
     "forest": "#74b86a",
     "craft": "#e0a35c",
     "population": "#c9b48c",
-    "plate": "#9378a8"
+    "plate": "#9378a8",
+    "plate_conv": "#cf5b4e",
+    "plate_div": "#57a89a",
+    "plate_trans": "#9b86b5"
   }
 }
