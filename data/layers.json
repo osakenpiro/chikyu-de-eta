@@ -49,7 +49,7 @@
       "opacityMul": 0.8,
       "altitude": 0.003,
       "enabled": false,
-      "credit": "河川・湖：Natural Earth（1:110m, パブリックドメイン）",
+      "credit": "河川・湖：Natural Earth（世界の大河・湖, 1:110m, パブリックドメイン）＋ 日本の主要河川：© OpenStreetMap contributors（ODbL）",
       "category": "water"
     },
     {
