@@ -237,7 +237,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-28e';
+const R = 100, LS_KEY = 'chikyu-de-eta-v0', BUILD='2026-06-28f';
 const statusEl = document.getElementById('status');
 const isMobile = matchMedia('(max-width:560px)').matches;
 const $ = s=>document.querySelector(s);
@@ -247,6 +247,8 @@ const settings = Object.assign({
 }, load());
 function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'{}'); }catch(e){ return {}; } }
 function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(settings)); }catch(e){} }
+// one-time silhouette-first defaults (kuni-OFF/tairiku-ON) - respects later manual toggles
+if(!(settings._dv>=1)){ settings.layers=settings.layers||{}; settings.layers.world=false; settings.layers.land=true; settings._dv=1; save(); }
 
 function toXYZ(lat,lng,alt=0){
   const phi=(90-lat)*Math.PI/180, theta=(90-lng)*Math.PI/180, r=R*(1+alt);
@@ -385,6 +387,29 @@ function buildLineLayer(gj, cfg, mat){
   const arr=new Float32Array(seg.length*3); seg.forEach((p,i)=>{arr[i*3]=p[0];arr[i*3+1]=p[1];arr[i*3+2]=p[2];});
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(arr,3));
   const o=new THREE.LineSegments(geo,mat); o.renderOrder=2; return {obj:o, count:seg.length/2};
+}
+function buildFillLayer(gj, cfg, mat){
+  const alt=cfg.altitude!=null?cfg.altitude:0.0012;
+  const pos=[]; let skip=0;
+  const V=THREE.Vector2, SU=THREE.ShapeUtils;
+  const strip=r=>{ if(r.length>1){ const a=r[0],b=r[r.length-1]; if(a[0]===b[0]&&a[1]===b[1]) return r.slice(0,-1);} return r; };
+  const addPoly=rings=>{ if(!rings||!rings.length) return;
+    const outer=strip(rings[0]).map(c=>new V(c[0],c[1])); if(outer.length<3) return;
+    const holes=[]; for(let h=1;h<rings.length;h++){ const hr=strip(rings[h]).map(c=>new V(c[0],c[1])); if(hr.length>=3) holes.push(hr); }
+    let faces; try{ faces=SU.triangulateShape(outer,holes); }catch(e){ return; }
+    if(!faces||!faces.length) return;
+    const pts=outer.concat.apply(outer,holes);
+    for(const f of faces){ const a=pts[f[0]],b=pts[f[1]],c=pts[f[2]]; if(!a||!b||!c) continue;
+      if(Math.max(a.x,b.x,c.x)-Math.min(a.x,b.x,c.x)>180){ skip++; continue; }
+      const pa=toXYZ(a.y,a.x,alt),pb=toXYZ(b.y,b.x,alt),pc=toXYZ(c.y,c.x,alt);
+      pos.push(pa[0],pa[1],pa[2],pb[0],pb[1],pb[2],pc[0],pc[1],pc[2]); } };
+  for(const ft of gj.features){ const g=ft.geometry; if(!g) continue;
+    if(g.type==='Polygon') addPoly(g.coordinates);
+    else if(g.type==='MultiPolygon') g.coordinates.forEach(addPoly); }
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos),3));
+  const o=new THREE.Mesh(geo,mat); o.renderOrder=1;
+  if(skip) console.log('[chikyu-de-eta] fill skipped tris (antimeridian):', skip);
+  return {obj:o, count:pos.length/3};
 }
 function buildPointLayer(gj, cfg, mat){
   const pos=[], sizes=[], brights=[], alt=cfg.altitude!=null?cfg.altitude:0.012,
@@ -710,6 +735,7 @@ function loadLayer(l){
       else if(l.kind==='column'){ mat=makeLineMat(colorOf(l), opMul); const pm=makePointMat(colorOf(l), opMul, l.tipSize!=null?l.tipSize:0.5); if(settings.white) pm.uniforms.uColor.value.copy(WHITE); allMats.push(pm); built=buildColumnLayer(gj,l,mat,pm); }
       else if(l.kind==='flags'){ built=buildFlagLayer(gj,l); }
       else if(l.kind==='labels'){ built=buildLabelLayer(gj,l); }
+      else if(l.kind==='fill'){ mat=makeLineMat(colorOf(l), opMul); mat.side=THREE.DoubleSide; built=buildFillLayer(gj,l,mat); }
       else { mat=makeLineMat(colorOf(l), opMul); built=buildLineLayer(gj,l,mat); }
       if(mat) allMats.push(mat);
       built.obj.visible = !!settings.layers[l.id];
